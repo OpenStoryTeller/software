@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "hal_gpio.h": "c",
+        "samd21.h": "c",
+        "uart.h": "c",
+        "stdint.h": "c",
+        "nanoprintf.h": "c",
+        "ost_common.h": "c",
+        "spi_master.h": "c",
+        "debug.h": "c",
+        "vadefs.h": "c"
+    }
+}

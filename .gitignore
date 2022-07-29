@@ -1,0 +1,17 @@
+/ports/atmel-samd/osb.X/build/
+/ports/atmel-samd/osb.X/dist/
+/ports/os-arduino-mkr-zero.X/dist/
+/ports/os-arduino-mkr-zero.X/build/
+build/
+
+*.user
+
+CMakeLists.txt.user.7e93c85
+
+*.log
+
+.vscode/.cortex-debug.peripherals.state.json
+
+.vscode/.cortex-debug.registers.state.json
+
+test/build-bmp_decoding-Desktop_Qt_5_15_2_GCC_64bit-Debug/

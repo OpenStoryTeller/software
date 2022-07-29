@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug J-Link",
+            "cwd": "${workspaceRoot}",
+            "executable": "./sketch_oct14a/build/arduino.samd.mkrzero/sketch_oct14a.ino.elf",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServerCLExe", 
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "ATSAMD21G18A",
+            "interface": "swd",
+            "runToMain": true,
+            "armToolchainPath": "/opt/gcc-arm-none-eabi-2020/bin/"
+        }
+    ]
+}
