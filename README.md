@@ -2,9 +2,17 @@
 
 Open Story Teller is an Open Source project to provide guidelines and software to build your own story teller box. 
 
-The main goal is to *not* make electronics boards but instead buy or reuse existing ones. This will allow you to easily repair your device with spare parts.
+The main goal is to *not* make electronics boards but instead buy or reuse existing ones. This will allow you to easily repair your device with spare parts and avoid 
 
 We propose a set of parts and firmware that is working well togather but your are free to custom everything to fit your needs.
+
+*DO NOT BUILD YOUR OWN BOARD, JUST USE EXISTING ONES!*
+
+This project can be used as a base platform for any device that is composed by:
+- A display (TFT...)
+- An Audio output
+- A SD card or memory
+- Some Buttons / rotary encoder / potentiometer
 
 # Firmware/software
 
@@ -31,11 +39,9 @@ The price indicated is purely informative.
 | Category | Maker |  Name  | Rounded Price |
 |---|---|---|---|
 |Main CPU board      | Sipeed       | Longan Nano    |  4€  |
-| Audio              |              |                |  10€ |
+| Audio              |              |                |  15€ |
 | Memory storage     | Included SD card slot in Longan Nano |                |  -   |
-| Battery management |              |                |  10€ |
-
-Link to specific bundle page information : TODO
+| Battery management |              |                |  15€ |
 
 ### How to build
 
@@ -48,24 +54,18 @@ mkdir build
 cd build
 cmake -DTOOLCHAIN=riscv64-unknown-elf -DCMAKE_TOOLCHAIN_FILE=cmake/cross-gcc.cmake  -DCMAKE_BUILD_TYPE=Debug -DOST_BUNDLE=LONGAN_NANO ..
 
-
-Compiler flags: 
--std=gnu11 -Wall -march=rv32imac -mabi=ilp32 -mcmodel=medlow -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -fno-common -Og -g2 -ggdb2 -DPLATFORMIO=60103 -DUSE_STDPERIPH_DRIVER -DHXTAL_VALUE=8000000U -D__PLATFORMIO_BUILD_DEBUG__ 
-
-Linker flags
-
-riscv-nuclei-elf-gcc -o .pio/build/sipeed-longan-nano/firmware.elf -T /home/anthony/.platformio/packages/framework-gd32vf103-sdk/RISCV/env_Eclipse/GD32VF103xB.lds -march=rv32imac -mabi=ilp32 -mcmodel=medlow -nostartfiles -Xlinker --gc-sections --specs=nano.specs -Og -g2 -ggdb2 .pio/build/sipeed-longan-nano/src/audio.o .pio/build/sipeed-longan-nano/src/i2s.o .pio/build/sipeed-longan-nano/src/ili9341.o .pio/build/sipeed-longan-nano/src/main.o .pio/build/sipeed-longan-nano/src/sdcard.o .pio/build/sipeed-longan-nano/src/spi.o .pio/build/sipeed-longan-nano/src/spi0.o .pio/build/sipeed-longan-nano/src/systick.o -L.pio/build/sipeed-longan-nano -Wl,--start-group .pio/build/sipeed-longan-nano/libef6/libff.a .pio/build/sipeed-longan-nano/libstandard_peripheral.a .pio/build/sipeed-longan-nano/libRISCV.a -lm -lc -lc -Wl,--end-group
-
 Convert tools:
 
-riscv-nuclei-elf-objcopy -O binary .pio/build/sipeed-longan-nano/firmware.elf .pio/build/sipeed-longan-nano/firmware.bin
-riscv-nuclei-elf-objcopy -O ihex .pio/build/sipeed-longan-nano/firmware.elf .pio/build/sipeed-longan-nano/firmware.hex
+- riscv64-unknown-elf-objcopy -O binary your-file.elf your-file.hex
+- riscv64-unknown-elf-objcopy -O ihex your-file.elf your-file.hex
 
+### Wirring
 
+TBD
 
 # Mechanical and enclosure
 
-Use existing enclosures, build your own using wood or 3D printing... we do not propose (yet) any standard package.
+Use existing enclosures, build your own using wood or 3D printing... we do not propose (yet) any standard package, sorry :(
 
 # Future targets
 
