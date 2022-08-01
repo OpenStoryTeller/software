@@ -56,7 +56,7 @@ void filesystem_mount()
     }
 
     debug_printf("[OST] SD Card File System = %d\r\n", fs.fs_type); // FS_EXFAT = 4
-    // printf("[OST] Starting with CPU=%d\r\n", (int)SystemCoreClock);
+    // debug_printf("[OST] Starting with CPU=%d\r\n", (int)SystemCoreClock);
 
     scan_files("");
 }

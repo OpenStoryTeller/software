@@ -14,7 +14,7 @@
 #define NANOPRINTF_IMPLEMENTATION
 #include "nanoprintf.h"
 
-static void putchar(int c, void *ctx)
+static void putc_wrapper(int c, void *ctx)
 {
     (void) ctx;
     system_putc(c);
@@ -24,7 +24,7 @@ void debug_printf(char const *fmt, ...)
 {
     va_list val;
     va_start(val, fmt);
-    (void) npf_vpprintf(putchar, NULL, fmt, val);
+    (void) npf_vpprintf(putc_wrapper, NULL, fmt, val);
     va_end(val);
 }
 

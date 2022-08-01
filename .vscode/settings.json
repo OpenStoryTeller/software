@@ -8,6 +8,7 @@
         "ost_common.h": "c",
         "spi_master.h": "c",
         "debug.h": "c",
-        "vadefs.h": "c"
+        "vadefs.h": "c",
+        "picture.h": "c"
     }
 }

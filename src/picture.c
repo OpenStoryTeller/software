@@ -5,9 +5,11 @@
 #include <string.h>
 #include "libutil.h"
 #include "ost_common.h"
-
+#include "debug.h"
 
 #ifdef OST_USE_FF_LIBRARY
+#include "ff.h"
+#include "diskio.h"
 typedef FIL file_t;
 #else
 
@@ -24,7 +26,7 @@ file_t ost_file_open(const char *filename)
     FRESULT fr = f_open(&fil, filename, FA_READ);
     if (fr != FR_OK)
     {
-        printf("ERROR: f_open %d\n\r", (int) fr);
+        debug_printf("ERROR: f_open %d\n\r", (int) fr);
     }
     return fil;
 #else
@@ -121,32 +123,25 @@ void decompress()
     offset = HEADER_SIZE + INFO_HEADER_SIZE;
     memcpy(palette, bmpImage + HEADER_SIZE + INFO_HEADER_SIZE, paletteSize);
 
-    offset = 0;
-    fseek(fil, header.offset, SEEK_SET);
-    fread(bmpImage, sizeof(uint8_t), 512, fil);
-    uint8_t *compressed = &bmpImage[0];
-
-/*
     offset = header.offset;
-    uint8_t *compressed = &bmpImage[header.offset];
-*/
+    uint8_t *compressed = &bmpImage[header.offset]; // start with data just after the BPM header
 
-    printf("File size (from header):%d\r\n", (uint32_t)header.size);
-    printf("File size (from data):%d\r\n", (uint32_t)fileSize);
-    printf("Data offset:%d\r\n", (uint32_t)header.offset);
-    printf("Image size:%d\r\n", (uint32_t)info_header.size);
-    printf("width:%d\r\n", (uint32_t)info_header.width);
-    printf("height:%d\r\n", (uint32_t)info_header.height);
-    printf("Planes:%d\r\n", (uint32_t)info_header.planes);
-    printf("Bits:%d\r\n", (uint32_t)info_header.bits);
-    printf("Compression:%d\r\n", (uint32_t)info_header.compression); // 2 - 4 bit run length encoding
-    printf("Image size:%d\r\n", (uint32_t)info_header.imagesize);
-    printf("X resolution:%d\r\n", (uint32_t)info_header.xresolution);
-    printf("Y resolution:%d\r\n", (uint32_t)info_header.yresolution);
-    printf("Colors:%d\r\n", (uint32_t)info_header.ncolours);
-    printf("Important colors:%d\r\n", (uint32_t)info_header.importantcolours);
-    printf("RGB :%d\r\n", (uint32_t)info_header.rgb);
-    printf("RGB2 :%d\r\n", (uint32_t)info_header.rgb2);
+    debug_printf("File size (from header):%d\r\n", (uint32_t)header.size);
+    debug_printf("File size (from data):%d\r\n", (uint32_t)fileSize);
+    debug_printf("Data offset:%d\r\n", (uint32_t)header.offset);
+    debug_printf("Image size:%d\r\n", (uint32_t)info_header.size);
+    debug_printf("width:%d\r\n", (uint32_t)info_header.width);
+    debug_printf("height:%d\r\n", (uint32_t)info_header.height);
+    debug_printf("Planes:%d\r\n", (uint32_t)info_header.planes);
+    debug_printf("Bits:%d\r\n", (uint32_t)info_header.bits);
+    debug_printf("Compression:%d\r\n", (uint32_t)info_header.compression); // 2 - 4 bit run length encoding
+    debug_printf("Image size:%d\r\n", (uint32_t)info_header.imagesize);
+    debug_printf("X resolution:%d\r\n", (uint32_t)info_header.xresolution);
+    debug_printf("Y resolution:%d\r\n", (uint32_t)info_header.yresolution);
+    debug_printf("Colors:%d\r\n", (uint32_t)info_header.ncolours);
+    debug_printf("Important colors:%d\r\n", (uint32_t)info_header.importantcolours);
+    debug_printf("RGB :%d\r\n", (uint32_t)info_header.rgb);
+    debug_printf("RGB2 :%d\r\n", (uint32_t)info_header.rgb2);
 
     // buffer de sortie, bitmap décompressé
     memset(decompressed, 0, sizeof(decompressed));
@@ -176,6 +171,7 @@ void decompress()
             fseek(fil, offset, SEEK_SET);
             fread(bmpImage, sizeof(uint8_t), 512, fil);
 #endif
+            compressed = &bmpImage[0];
             i = 0;
         }
         
@@ -198,15 +194,7 @@ void decompress()
 
                 if (pixel > info_header.width)
                 {
-                    // // enough pixels to write a line to the screen
-                    // ili9341_draw_h_line(pos.y, decompressed, palette);
-                    // // ili9341_write(&pos, decompressed);
-                    // // next line...
-                    // pos.y++;
-                    // totalPixels += info_header.width;
-                //    pixel = 0;
-               //     nblines++;
-                    printf("!");
+                    debug_printf("!"); // should be an error here
                 }
             }
             i += 2; // jump pair instruction
@@ -256,7 +244,7 @@ void decompress()
 
                     if (pixel >= info_header.width)
                     {
-                        printf("!");
+                        debug_printf("!");
                       //  pixel = 0;
                     }
                 }
@@ -272,9 +260,8 @@ void decompress()
             if (pixel == info_header.width)
             {
                 // enough pixels to write a line to the screen
-         //       ili9341_draw_h_line(pos.y, decompressed, palette);
                 disp_draw_h_line(pos.y, decompressed, palette);
-                printf("POS Y: %d", pos.y);
+                debug_printf("POS Y: %d", pos.y);
 
                 memset(decompressed, 0, sizeof(decompressed));
                 // ili9341_write(&pos, decompressed);
@@ -284,21 +271,24 @@ void decompress()
                 pixel = 0;
                 nblines++;
             }
+            else if (pixel > info_header.width)
+            {
+                debug_printf("!");
+                //  pixel = 0;00000000000000000000000000000000000000
+            }
         }
-
-        
-        // else if (pixel > info_header.width)
-        // {
-        //     printf("!");
-        //     //  pixel = 0;
-        // }
 
         if (totalPixels > (info_header.width * info_header.height))
         {
-           end = false; // error
+           end = true; // error
         }
     }
     while((offset < fileSize) && !end);
+
+    if (end)
+    {
+        debug_printf("\r\n>>>>> Decoding error !! <<<<\r\n");
+    }
 
     // Fill missing lines
     if (nblines < info_header.height)
@@ -319,7 +309,7 @@ void decompress()
 #endif
 
 
-    printf("\r\nNb lines :%d\r\nTotal pixels: %d", (uint32_t)nblines, (uint32_t)totalPixels);
+    debug_printf("\r\nNb lines :%d\r\nTotal pixels: %d", (uint32_t)nblines, (uint32_t)totalPixels);
 }
 
 
