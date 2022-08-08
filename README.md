@@ -59,7 +59,7 @@ Convert tools:
 - riscv64-unknown-elf-objcopy -O binary your-file.elf your-file.hex
 - riscv64-unknown-elf-objcopy -O ihex your-file.elf your-file.hex
 
-### Wirring
+### Wiring
 
 TBD
 

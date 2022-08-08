@@ -34,7 +34,7 @@
 #include <stdbool.h>
 
 /*- Prototypes --------------------------------------------------------------*/
-int spi_init(int freq, int mode);
+void spi_init(int freq, int mode);
 void spi_ss(int state);
 uint8_t spi_write_byte(uint8_t byte);
 

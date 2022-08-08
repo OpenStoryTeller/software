@@ -50,7 +50,7 @@ void spi1_initialize()
     gpio_init(GPIOB, GPIO_MODE_OUT_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
 
     /* chip _select invalid*/
-    spi_cs_high();
+    spi1_cs_high();
 
     /* SPI1 parameter config */
     spi_init_struct.trans_mode           = SPI_TRANSMODE_FULLDUPLEX;

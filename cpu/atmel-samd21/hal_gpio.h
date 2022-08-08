@@ -123,4 +123,3 @@
   }										\
 
 #endif // _HAL_GPIO_H_
-

@@ -76,12 +76,22 @@ if(${OST_BUNDLE} STREQUAL "LONGAN_NANO")
         gcc m c gigadevice-gd32vf103 sipeed-longan-nano
         "-Wl,--end-group")
 
-    # SET(BUNDLE_LIBRARIES
-    #     sipeed-longan-nano
-    #     gigadevice-gd32vf103
-    #     gcc m c c
-    # )
+elseif(${OST_BUNDLE} STREQUAL "MKR_ZERO")
+    message("=============  TARGET: MKR ZERO  =============")
 
+    add_definitions(-DOST_USE_FF_LIBRARY)
+
+    # ------ CPU
+    SET(CPU_TARGET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21/include.cmake)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21)
+    
+    add_library(BUNDLE_LIBRARIES INTERFACE)
+    target_link_libraries(BUNDLE_LIBRARIES INTERFACE "-Wl,--start-group" 
+        gcc m c stdc++ atmel-samd21 arm_cortexM0l_math
+        "-Wl,--end-group")
+
+    target_link_directories(BUNDLE_LIBRARIES INTERFACE ${CMAKE_SOURCE_DIR}/libs/CMSIS/CMSIS/Lib/GCC)
 
 else()
     message("============= DEFAULT TARGET: LINUX CONSOLE ============= ")

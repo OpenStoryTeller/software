@@ -9,6 +9,23 @@
         "spi_master.h": "c",
         "debug.h": "c",
         "vadefs.h": "c",
-        "picture.h": "c"
+        "picture.h": "c",
+        "platform.h": "c",
+        "stdbool.h": "c",
+        "asf.h": "c",
+        "gclk.h": "c",
+        "spi.h": "c",
+        "variant.h": "c",
+        "samd.h": "c",
+        "samd21g18au.h": "c",
+        "samd21g18a.h": "c",
+        "stdio.h": "c",
+        "wvariant.h": "c",
+        "*.tcc": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "variant": "cpp"
     }
 }

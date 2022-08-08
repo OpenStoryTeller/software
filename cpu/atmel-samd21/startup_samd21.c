@@ -1,167 +1,144 @@
-/*
- * Copyright (c) 2015, Alex Taradov <alex@taradov.com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+#include <samd21.h>
 
-//-----------------------------------------------------------------------------
-#include "samd21.h"
+#include <stdio.h>
 
-//-----------------------------------------------------------------------------
-#define DUMMY __attribute__ ((weak, alias ("irq_handler_dummy")))
 
-//-----------------------------------------------------------------------------
-void irq_handler_reset(void);
-DUMMY void irq_handler_nmi(void);
-DUMMY void irq_handler_hard_fault(void);
-DUMMY void irq_handler_sv_call(void);
-DUMMY void irq_handler_pend_sv(void);
-DUMMY void irq_handler_sys_tick(void);
-
-DUMMY void irq_handler_pm(void);
-DUMMY void irq_handler_sysctrl(void);
-DUMMY void irq_handler_wdt(void);
-DUMMY void irq_handler_rtc(void);
-DUMMY void irq_handler_eic(void);
-DUMMY void irq_handler_nvmctrl(void);
-DUMMY void irq_handler_dmac(void);
-DUMMY void irq_handler_usb(void);
-DUMMY void irq_handler_evsys(void);
-DUMMY void irq_handler_sercom0(void);
-DUMMY void irq_handler_sercom1(void);
-DUMMY void irq_handler_sercom2(void);
-DUMMY void irq_handler_sercom3(void);
-DUMMY void irq_handler_sercom4(void);
-DUMMY void irq_handler_sercom5(void);
-DUMMY void irq_handler_tcc0(void);
-DUMMY void irq_handler_tcc1(void);
-DUMMY void irq_handler_tcc2(void);
-DUMMY void irq_handler_tc3(void);
-DUMMY void irq_handler_tc4(void);
-DUMMY void irq_handler_tc5(void);
-DUMMY void irq_handler_tc6(void);
-DUMMY void irq_handler_tc7(void);
-DUMMY void irq_handler_adc(void);
-DUMMY void irq_handler_ac(void);
-DUMMY void irq_handler_dac(void);
-DUMMY void irq_handler_ptc(void);
-DUMMY void irq_handler_i2s(void);
-
-extern int main(void);
-
-extern void _stack_top(void);
-extern unsigned int _etext;
-extern unsigned int _data;
-extern unsigned int _edata;
-extern unsigned int _bss;
-extern unsigned int _ebss;
-
-//-----------------------------------------------------------------------------
-__attribute__ ((used, section(".vectors")))
-void (* const vectors[])(void) =
+/* Default empty handler */
+void Dummy_Handler(void)
 {
-  &_stack_top,                   // 0 - Initial Stack Pointer Value
+#if defined DEBUG
+  __BKPT(3);
+#endif
+  for (;;) { }
+}
 
-  // Cortex-M0+ handlers
-  irq_handler_reset,             // 1 - Reset
-  irq_handler_nmi,               // 2 - NMI
-  irq_handler_hard_fault,        // 3 - Hard Fault
-  0,                             // 4 - Reserved
-  0,                             // 5 - Reserved
-  0,                             // 6 - Reserved
-  0,                             // 7 - Reserved
-  0,                             // 8 - Reserved
-  0,                             // 9 - Reserved
-  0,                             // 10 - Reserved
-  irq_handler_sv_call,           // 11 - SVCall
-  0,                             // 12 - Reserved
-  0,                             // 13 - Reserved
-  irq_handler_pend_sv,           // 14 - PendSV
-  irq_handler_sys_tick,          // 15 - SysTick
+/* Cortex-M0+ core handlers */
+void HardFault_Handler(void) __attribute__ ((weak, alias("Dummy_Handler")));
+void Reset_Handler    (void);
+void NMI_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SVC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void PendSV_Handler   (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SysTick_Handler  (void); __attribute__ ((weak, alias("Dummy_Handler")));
 
-  // Peripheral handlers
-  irq_handler_pm,                // 0 - Power Manager
-  irq_handler_sysctrl,           // 1 - System Controller
-  irq_handler_wdt,               // 2 - Watchdog Timer
-  irq_handler_rtc,               // 3 - Real Time Counter
-  irq_handler_eic,               // 4 - External Interrupt Controller
-  irq_handler_nvmctrl,           // 5 - Non-Volatile Memory Controller
-  irq_handler_dmac,              // 6 - Direct Memory Access Controller
-  irq_handler_usb,               // 7 - Universal Serial Bus Controller
-  irq_handler_evsys,             // 8 - Event System
-  irq_handler_sercom0,           // 9 - Serial Communication Interface 0
-  irq_handler_sercom1,           // 10 - Serial Communication Interface 1
-  irq_handler_sercom2,           // 11 - Serial Communication Interface 2
-  irq_handler_sercom3,           // 12 - Serial Communication Interface 3
-  irq_handler_sercom4,           // 13 - Serial Communication Interface 4
-  irq_handler_sercom5,           // 14 - Serial Communication Interface 5
-  irq_handler_tcc0,              // 15 - Timer/Counter for Control 0
-  irq_handler_tcc1,              // 16 - Timer/Counter for Control 1
-  irq_handler_tcc2,              // 17 - Timer/Counter for Control 2
-  irq_handler_tc3,               // 18 - Timer/Counter 3
-  irq_handler_tc4,               // 19 - Timer/Counter 4
-  irq_handler_tc5,               // 20 - Timer/Counter 5
-  irq_handler_tc6,               // 21 - Timer/Counter 6
-  irq_handler_tc7,               // 22 - Timer/Counter 7
-  irq_handler_adc,               // 23 - Analog-to-Digital Converter
-  irq_handler_ac,                // 24 - Analog Comparator
-  irq_handler_dac,               // 25 - Digital-to-Analog Converter
-  irq_handler_ptc,               // 26 - Peripheral Touch Controller
-  irq_handler_i2s,               // 27 - Inter-IC Sound Interface
+/* Peripherals handlers */
+void PM_Handler       (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SYSCTRL_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void WDT_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void RTC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void EIC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void NVMCTRL_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void DMAC_Handler     (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void USB_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void EVSYS_Handler    (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM0_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM1_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM2_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM3_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM4_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void SERCOM5_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TCC0_Handler     (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TCC1_Handler     (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TCC2_Handler     (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TC3_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TC4_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TC5_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TC6_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void TC7_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void ADC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void AC_Handler       (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void DAC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void PTC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+void I2S_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
+
+/* Initialize segments */
+extern uint32_t __etext;
+extern uint32_t __data_start__;
+extern uint32_t __data_end__;
+extern uint32_t __bss_start__;
+extern uint32_t __bss_end__;
+extern uint32_t __StackTop;
+
+/* Exception Table */
+__attribute__ ((section(".isr_vector"))) const DeviceVectors exception_table =
+{
+  /* Configure Initial Stack Pointer, using linker-generated symbols */
+  (void*) (&__StackTop),
+
+  (void*) Reset_Handler,
+  (void*) NMI_Handler,
+  (void*) HardFault_Handler,
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) SVC_Handler,
+  (void*) (0UL), /* Reserved */
+  (void*) (0UL), /* Reserved */
+  (void*) PendSV_Handler,
+  (void*) SysTick_Handler,
+
+  /* Configurable interrupts */
+  (void*) PM_Handler,             /*  0 Power Manager */
+  (void*) SYSCTRL_Handler,        /*  1 System Control */
+  (void*) WDT_Handler,            /*  2 Watchdog Timer */
+  (void*) RTC_Handler,            /*  3 Real-Time Counter */
+  (void*) EIC_Handler,            /*  4 External Interrupt Controller */
+  (void*) NVMCTRL_Handler,        /*  5 Non-Volatile Memory Controller */
+  (void*) DMAC_Handler,           /*  6 Direct Memory Access Controller */
+  (void*) USB_Handler,            /*  7 Universal Serial Bus */
+  (void*) EVSYS_Handler,          /*  8 Event System Interface */
+  (void*) SERCOM0_Handler,        /*  9 Serial Communication Interface 0 */
+  (void*) SERCOM1_Handler,        /* 10 Serial Communication Interface 1 */
+  (void*) SERCOM2_Handler,        /* 11 Serial Communication Interface 2 */
+  (void*) SERCOM3_Handler,        /* 12 Serial Communication Interface 3 */
+  (void*) SERCOM4_Handler,        /* 13 Serial Communication Interface 4 */
+  (void*) SERCOM5_Handler,        /* 14 Serial Communication Interface 5 */
+  (void*) TCC0_Handler,           /* 15 Timer Counter Control 0 */
+  (void*) TCC1_Handler,           /* 16 Timer Counter Control 1 */
+  (void*) TCC2_Handler,           /* 17 Timer Counter Control 2 */
+  (void*) TC3_Handler,            /* 18 Basic Timer Counter 0 */
+  (void*) TC4_Handler,            /* 19 Basic Timer Counter 1 */
+  (void*) TC5_Handler,            /* 20 Basic Timer Counter 2 */
+  (void*) TC6_Handler,            /* 21 Basic Timer Counter 3 */
+  (void*) TC7_Handler,            /* 22 Basic Timer Counter 4 */
+  (void*) ADC_Handler,            /* 23 Analog Digital Converter */
+  (void*) AC_Handler,             /* 24 Analog Comparators */
+  (void*) DAC_Handler,            /* 25 Digital Analog Converter */
+  (void*) PTC_Handler,            /* 26 Peripheral Touch Controller */
+  (void*) I2S_Handler,            /* 27 Inter-IC Sound Interface */
+  (void*) (0UL),                  /* Reserved */
 };
 
-//-----------------------------------------------------------------------------
-void irq_handler_reset(void)
+extern int main(void);
+void CoreInit();
+
+/* This is called on processor reset to initialize the device and call main() */
+void Reset_Handler(void)
 {
-  unsigned int *src, *dst;
+  uint32_t *pSrc, *pDest;
 
-  src = &_etext;
-  dst = &_data;
-  while (dst < &_edata)
-    *dst++ = *src++;
+  /* Initialize the initialized data section */
+  pSrc = &__etext;
+  pDest = &__data_start__;
 
-  dst = &_bss;
-  while (dst < &_ebss)
-    *dst++ = 0;
+  if ((&__data_start__ != &__data_end__) && (pSrc != pDest)) {
+    for (; pDest < &__data_end__; pDest++, pSrc++)
+      *pDest = *pSrc;
+  }
 
-  SCB->VTOR = (uint32_t)vectors;
+  /* Clear the zero section */
+  if ((&__data_start__ != &__data_end__) && (pSrc != pDest)) {
+    for (pDest = &__bss_start__; pDest < &__bss_end__; pDest++)
+      *pDest = 0;
+  }
+
+  CoreInit();
 
   main();
 
-  while (1);
-}
-
-//-----------------------------------------------------------------------------
-void irq_handler_dummy(void)
-{
-  while (1);
-}
-
-//-----------------------------------------------------------------------------
-void _exit(int status)
-{
-  (void)status;
-  while (1);
+  while (1)
+    ;
 }
