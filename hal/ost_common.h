@@ -38,10 +38,10 @@ void system_delay_ms(uint32_t delay);
 // ----------------------------------------------------------------------------
 // SDCARD HAL
 // ----------------------------------------------------------------------------
-void spi_set_fclk_slow();
-void spi_set_fclk_fast();
-void spi_cs_high();
-void spi_cs_low();
+void sdcard_set_slow_clock();
+void sdcard_set_fast_clock();
+void sdcard_cs_high();
+void sdcard_cs_low();
 
 /**
  * @brief
@@ -49,7 +49,7 @@ void spi_cs_low();
  * @param dat Data to send
  * @return uint8_t
  */
-uint8_t xchg_spi (uint8_t dat);
+uint8_t sdcard_spi_transfer (uint8_t dat);
 
 /**
  * @brief Receive multiple byte
@@ -57,7 +57,7 @@ uint8_t xchg_spi (uint8_t dat);
  * @param buff  Pointer to data buffer
  * @param btr	Number of bytes to receive (even number)
  */
-void rcvr_spi_multi (uint8_t *buff, uint32_t btr);
+void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr);
 
 // ----------------------------------------------------------------------------
 // DISPLAY HAL

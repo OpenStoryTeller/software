@@ -291,32 +291,32 @@ void system_delay_ms(uint32_t delay)
 // ----------------------------------------------------------------------------
 // SDCARD HAL
 // ----------------------------------------------------------------------------
-void spi_set_fclk_slow()
+void sdcard_set_slow_clock()
 {
     spi_init(100000, 0);
 }
 
-void spi_set_fclk_fast()
+void sdcard_set_fast_clock()
 {
     spi_init(800000, 0);
 }
 
-void spi_cs_high()
+void sdcard_cs_high()
 {
     spi_ss(1);
 }
 
-void spi_cs_low()
+void sdcard_cs_low()
 {
     spi_ss(0);
 }
 
-uint8_t xchg_spi (uint8_t dat)
+uint8_t sdcard_spi_transfer (uint8_t dat)
 {
     return spi_transfer(dat);
 }
 
-void rcvr_spi_multi (uint8_t *buff, uint32_t btr)
+void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr)
 {
     for (uint32_t i = 0; i < btr; i++)
     {

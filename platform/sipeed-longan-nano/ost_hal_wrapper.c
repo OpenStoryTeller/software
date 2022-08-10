@@ -228,33 +228,33 @@ void spi_initialize(uint8_t id)
     spi1_initialize(0);
 }
 
-void spi_set_fclk_slow()
+void sdcard_set_slow_clock()
 {
     spi1_set_fclk_slow();
 }
 
-void spi_set_fclk_fast()
+void sdcard_set_fast_clock()
 {
     spi1_set_fclk_fast();
 }
 
-void spi_cs_high()
+void sdcard_cs_high()
 {
     void spi1_cs_high();
 
 }
 
-void spi_cs_low()
+void sdcard_cs_low()
 {
     void spi1_cs_low();
 }
 
-uint8_t xchg_spi (uint8_t dat)
+uint8_t sdcard_spi_transfer (uint8_t dat)
 {
     return xchg_spi1(dat);
 }
 
-void rcvr_spi_multi (uint8_t *buff, uint32_t btr)
+void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr)
 {
     for (uint32_t i = 0; i < btr; i++)
     {
