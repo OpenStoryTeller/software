@@ -42,7 +42,6 @@ void spi_set_fclk_slow();
 void spi_set_fclk_fast();
 void spi_cs_high();
 void spi_cs_low();
-void spi_initialize(uint8_t id);
 
 /**
  * @brief

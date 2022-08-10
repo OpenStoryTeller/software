@@ -107,13 +107,27 @@
   }										\
 										\
   static inline void HAL_GPIO_##name##_pmuxen(int mux)				\
-  {										\
-    PORT->Group[HAL_GPIO_PORT##port].PINCFG[pin].reg |= PORT_PINCFG_PMUXEN;	\
-    if (pin & 1)								\
-      PORT->Group[HAL_GPIO_PORT##port].PMUX[pin>>1].bit.PMUXO = mux;		\
-    else									\
-      PORT->Group[HAL_GPIO_PORT##port].PMUX[pin>>1].bit.PMUXE = mux;		\
-    (void)HAL_GPIO_##name##_pmuxen;						\
+  { \
+  /* is pin odd? */ \
+    if ( pin & 1 )  \
+    { \
+      uint32_t temp ; \
+ \
+      /* Get whole current setup for both odd and even pins and remove odd one */ \
+      temp = (PORT->Group[HAL_GPIO_PORT##port].PMUX[pin >> 1].reg) & PORT_PMUX_PMUXE( 0xF ) ; \
+      /* Set new muxing */ \
+      PORT->Group[HAL_GPIO_PORT##port].PMUX[pin >> 1].reg = temp|PORT_PMUX_PMUXO( mux ) ; \
+      /* Enable port mux */ \
+      PORT->Group[HAL_GPIO_PORT##port].PINCFG[pin].reg |= PORT_PINCFG_PMUXEN ; \
+    } \
+    else /* even pin */ \
+    { \
+      uint32_t temp ; \
+ \
+      temp = (PORT->Group[HAL_GPIO_PORT##port].PMUX[pin >> 1].reg) & PORT_PMUX_PMUXO( 0xF ) ; \
+      PORT->Group[HAL_GPIO_PORT##port].PMUX[pin >> 1].reg = temp|PORT_PMUX_PMUXE( mux ) ; \
+      PORT->Group[HAL_GPIO_PORT##port].PINCFG[pin].reg |= PORT_PINCFG_PMUXEN ; /* Enable port mux */ \
+    } \
   }										\
 										\
   static inline void HAL_GPIO_##name##_pmuxdis(void)				\
@@ -121,5 +135,6 @@
     PORT->Group[HAL_GPIO_PORT##port].PINCFG[pin].reg &= ~PORT_PINCFG_PMUXEN;	\
     (void)HAL_GPIO_##name##_pmuxdis;						\
   }										\
+
 
 #endif // _HAL_GPIO_H_

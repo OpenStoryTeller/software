@@ -202,9 +202,7 @@ DSTATUS disk_initialize (
 {
 	BYTE n, cmd, ty, ocr[4];
 
-
 	if (drv) return STA_NOINIT;			/* Supports only drive 0 */
-	spi_initialize(OST_ID_SPI_FOR_SDCARD);							/* Initialize SPI */
 
 	if (Stat & STA_NODISK) return Stat;	/* Is card existing in the soket? */
 

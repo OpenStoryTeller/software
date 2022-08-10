@@ -88,10 +88,9 @@ elseif(${OST_BUNDLE} STREQUAL "MKR_ZERO")
     
     add_library(BUNDLE_LIBRARIES INTERFACE)
     target_link_libraries(BUNDLE_LIBRARIES INTERFACE "-Wl,--start-group" 
-        gcc m c stdc++ atmel-samd21 arm_cortexM0l_math
-        "-Wl,--end-group")
+        gcc m c stdc++ atmel-samd21 "-Wl,--end-group")
 
-    target_link_directories(BUNDLE_LIBRARIES INTERFACE ${CMAKE_SOURCE_DIR}/libs/CMSIS/CMSIS/Lib/GCC)
+    # target_link_directories(BUNDLE_LIBRARIES INTERFACE ${CMAKE_SOURCE_DIR}/libs/CMSIS/CMSIS/Lib/GCC)
 
 else()
     message("============= DEFAULT TARGET: LINUX CONSOLE ============= ")

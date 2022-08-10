@@ -5,7 +5,7 @@
 #include <string.h>
 #include "samd21.h"
 #include "hal_gpio.h"
-#include "platform.h"
+#include "arduino_platform.h"
 
 HAL_GPIO_PIN(UART_TX,  B, 22)
 HAL_GPIO_PIN(UART_RX,  B, 23)

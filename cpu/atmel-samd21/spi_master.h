@@ -36,7 +36,9 @@
 /*- Prototypes --------------------------------------------------------------*/
 void spi_init(int freq, int mode);
 void spi_ss(int state);
-uint8_t spi_write_byte(uint8_t byte);
+uint8_t spi_transfer(uint8_t byte);
+void spi_reset();
+void spi_enable();
 
 #endif // _SPI_MASTER_H_
 

@@ -1,5 +1,5 @@
-#ifndef PLATFORM_H
-#define PLATFORM_H
+#ifndef ARDUINO_PLATFORM_H
+#define ARDUINO_PLATFORM_H
 
 #define SERCOM_FREQ_REF      48000000
 #define SERCOM_NVIC_PRIORITY ((1<<__NVIC_PRIO_BITS) - 1)
@@ -359,4 +359,4 @@ extern const PinDescription g_APinDescription[] ;
 #define GCM_I2S_0                 (0x23U)
 #define GCM_I2S_1                 (0x24U)
 
-#endif // PLATFORM_H
+#endif // ARDUINO_PLATFORM_H
