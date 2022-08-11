@@ -66,6 +66,8 @@ void ost_display_initialize();
 void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette);
 void ost_display_dc_high();
 void ost_display_dc_low();
+void ost_display_ss_high();
+void ost_display_ss_low();
 uint8_t ost_display_transfer_byte(uint8_t dat);
 void ost_display_transfer_multi (uint8_t *buff, uint32_t btr);
 

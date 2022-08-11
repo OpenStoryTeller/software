@@ -1,6 +1,6 @@
 #include "st7789.h"
 #include "ost_common.h"
-
+#include "debug.h"
 
 /**
  * @brief Write command to ST7789 controller
@@ -9,8 +9,8 @@
  */
 static void ST7789_WriteCommand(uint8_t cmd)
 {
+    ost_display_dc_low();
 	ost_display_ss_low();
-	ost_display_dc_low();
     ost_display_transfer_byte(cmd);
 	// HAL_SPI_Transmit(&ST7789_SPI_PORT, &cmd, sizeof(cmd), HAL_MAX_DELAY);
 	ost_display_ss_high();
@@ -24,8 +24,8 @@ static void ST7789_WriteCommand(uint8_t cmd)
  */
 static void ST7789_WriteData(uint8_t *buff, uint32_t buff_size)
 {
+    ost_display_dc_high();
 	ost_display_ss_low();
-	spi_display_dc(1);
 
 	// split data in small chunks because HAL can't send more than 64K at once
 
@@ -47,8 +47,9 @@ static void ST7789_WriteData(uint8_t *buff, uint32_t buff_size)
  */
 static void ST7789_WriteSmallData(uint8_t data)
 {
+    ost_display_dc_high();
 	ost_display_ss_low();
-	spi_display_dc(1);
+	
 	// HAL_SPI_Transmit(&ST7789_SPI_PORT, &data, sizeof(data), HAL_MAX_DELAY);
     ost_display_transfer_byte(data);
 	ost_display_ss_high();
@@ -119,11 +120,35 @@ void ST7789_Init(void)
 	#ifdef USE_DMA
 		memset(disp_buf, 0, sizeof(disp_buf));
 	#endif
-	// HAL_Delay(25);
+	// system_delay_ms(25);
     // ST7789_RST_Clr();
-    // HAL_Delay(25);
+    // system_delay_ms(25);
     // ST7789_RST_Set();
-    // HAL_Delay(50);
+    // system_delay_ms(50);
+
+    ST7789_WriteCommand(0x28);//Turn off display
+    ST7789_WriteCommand(0x11);//Exit sleep mode
+    system_delay_ms(100);
+    ST7789_WriteCommand(0x01);// Software Reset
+    system_delay_ms(150);
+
+    // Does not word, read 00 42 C2 FF ?? (should be 00 85 85 52 )
+    ost_display_dc_low();
+	ost_display_ss_low();
+    ost_display_transfer_byte(ST7789_RDDID);
+    uint8_t buff[4] = { 0xFF, 0xFF, 0xFF, 0xFF};
+    ost_display_transfer_multi(buff, sizeof(buff));
+
+    for (int i = 0; i < sizeof(buff); i++) {
+        debug_printf("%X ", buff[i]);
+    }
+    ost_display_ss_high();
+
+    ST7789_SetRotation(ST7789_ROTATION);	//	MADCTL (Display Rotation)
+
+    // ST7789_WriteCommand(ST7789_MADCTL);	// MADCTL
+	// ST7789_WriteSmallData(0x88);
+
 		
     ST7789_WriteCommand(ST7789_COLMOD);		//	Set color mode
     ST7789_WriteSmallData(ST7789_COLOR_MODE_16bit);
@@ -132,23 +157,31 @@ void ST7789_Init(void)
 		uint8_t data[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};
 		ST7789_WriteData(data, sizeof(data));
 	}
-	ST7789_SetRotation(ST7789_ROTATION);	//	MADCTL (Display Rotation)
+	
 	
 	/* Internal LCD Voltage generator settings */
     ST7789_WriteCommand(0XB7);				//	Gate Control
     ST7789_WriteSmallData(0x35);			//	Default value
     ST7789_WriteCommand(0xBB);				//	VCOM setting
-    ST7789_WriteSmallData(0x19);			//	0.725v (default 0.75v for 0x20)
+    ST7789_WriteSmallData(0x2B);			//	0.725v (default 0.75v for 0x20)
     ST7789_WriteCommand(0xC0);				//	LCMCTRL	
     ST7789_WriteSmallData (0x2C);			//	Default value
+    
     ST7789_WriteCommand (0xC2);				//	VDV and VRH command Enable
-    ST7789_WriteSmallData (0x01);			//	Default value
+    {
+		uint8_t data[] = {0x01, 0xFF};
+		ST7789_WriteData(data, sizeof(data));
+	}
+
     ST7789_WriteCommand (0xC3);				//	VRH set
-    ST7789_WriteSmallData (0x12);			//	+-4.45v (defalut +-4.1v for 0x0B)
+    ST7789_WriteSmallData (0x11);			//	+-4.45v (defalut +-4.1v for 0x0B)
+
     ST7789_WriteCommand (0xC4);				//	VDV set
     ST7789_WriteSmallData (0x20);			//	Default value
+
     ST7789_WriteCommand (0xC6);				//	Frame rate control in normal mode
     ST7789_WriteSmallData (0x0F);			//	Default value (60HZ)
+    
     ST7789_WriteCommand (0xD0);				//	Power control
     ST7789_WriteSmallData (0xA4);			//	Default value
     ST7789_WriteSmallData (0xA1);			//	Default value
@@ -156,22 +189,74 @@ void ST7789_Init(void)
 
 	ST7789_WriteCommand(0xE0);
 	{
-		uint8_t data[] = {0xD0, 0x04, 0x0D, 0x11, 0x13, 0x2B, 0x3F, 0x54, 0x4C, 0x18, 0x0D, 0x0B, 0x1F, 0x23};
+		uint8_t data[] = {0xD0, 0x00, 0x05, 0x0E, 0x15, 0x0D, 0x37, 0x43, 0x47, 0x09, 0x15, 0x12, 0x16, 0x19};
 		ST7789_WriteData(data, sizeof(data));
 	}
 
     ST7789_WriteCommand(0xE1);
 	{
-		uint8_t data[] = {0xD0, 0x04, 0x0C, 0x11, 0x13, 0x2C, 0x3F, 0x44, 0x51, 0x2F, 0x1F, 0x1F, 0x20, 0x23};
+		uint8_t data[] = {0xD0, 0x00, 0x05, 0x0D, 0x0C, 0x06, 0x2D, 0x44, 0x40, 0x0E, 0x1C, 0x18, 0x16, 0x19};
 		ST7789_WriteData(data, sizeof(data));
 	}
-    ST7789_WriteCommand (ST7789_INVON);		//	Inversion ON
+    ST7789_WriteCommand (ST7789_INVOFF);		//	Inversion OFF
 	ST7789_WriteCommand (ST7789_SLPOUT);	//	Out of sleep mode
   	ST7789_WriteCommand (ST7789_NORON);		//	Normal Display on
   	ST7789_WriteCommand (ST7789_DISPON);	//	Main screen turned on	
 
-	HAL_Delay(50);
-	ST7789_Fill_Color(BLACK);				//	Fill with Black.
+	system_delay_ms(50);
+//	ST7789_Fill_Color(BLACK);				//	Fill with Black.
+}
+
+
+// rrrrrggggggbbbbb
+uint8_t color_get_high(const color_t *c)
+ {
+	return ((c->r & 248) | (c->g >> 5));
+}
+// rrrrrggggggbbbbb
+uint8_t color_get_low(const color_t *c) {
+	return ((c->g & 28) << 3 | (c->b >> 3));
+}
+
+uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
+  return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+}
+
+
+void ST7789_Fill_Line(uint16_t y, const uint8_t *data, const uint8_t *palette)
+{
+	// ili9341_adressSet(0, y, 320, 240);
+    ST7789_SetAddressWindow(0, y, ST7789_WIDTH - 1, ST7789_HEIGHT - 1);
+  ost_display_dc_high();
+  ost_display_ss_low();	
+
+  color_t color;
+
+  for(uint16_t i = 0; i < 320; i++)
+  {
+      uint8_t val = data[i];
+
+      if (val > 15)
+      {
+        val = 0;
+        debug_printf("***");
+      }
+
+        const uint8_t *palettePtr = &palette[val * 4];
+        color.r = palettePtr[0];
+        color.g = palettePtr[1];
+        color.b = palettePtr[2];
+     //   uint16_t pixel = color565(color.r, color.g, color.b);
+
+        ost_display_transfer_byte(color_get_high(&color));
+        ost_display_transfer_byte(color_get_low(&color));
+		
+		// pixel = ILI9341_PURPLE;
+		// xchg_spi0(pixel>>8);
+		// xchg_spi0(pixel&0xFF);
+    }
+
+    ost_display_ss_high();
 }
 
 /**
@@ -296,73 +381,73 @@ void ST7789_InvertColors(uint8_t invert)
 void ST7789_Test(void)
 {
 	ST7789_Fill_Color(WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 	ST7789_WriteString(10, 20, "Speed Test", Font_11x18, RED, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 	ST7789_Fill_Color(CYAN);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(RED);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(BLUE);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(GREEN);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(YELLOW);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(BROWN);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(DARKBLUE);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(MAGENTA);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(LIGHTGREEN);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(LGRAY);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(LBBLUE);
-    HAL_Delay(500);
+    system_delay_ms(500);
 	ST7789_Fill_Color(WHITE);
-	HAL_Delay(500);
+	system_delay_ms(500);
 
 	ST7789_WriteString(10, 10, "Font test.", Font_16x26, GBLUE, WHITE);
 	ST7789_WriteString(10, 50, "Hello Steve!", Font_7x10, RED, WHITE);
 	ST7789_WriteString(10, 75, "Hello Steve!", Font_11x18, YELLOW, WHITE);
 	ST7789_WriteString(10, 100, "Hello Steve!", Font_16x26, MAGENTA, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Rect./Line.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawRectangle(30, 30, 100, 100, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Filled Rect.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledRectangle(30, 30, 50, 50, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Circle.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawCircle(60, 60, 25, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Filled Cir.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledCircle(60, 60, 25, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Triangle", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawTriangle(30, 30, 30, 70, 60, 40, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
 	ST7789_WriteString(10, 10, "Filled Tri", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledTriangle(30, 30, 30, 70, 60, 40, WHITE);
-	HAL_Delay(1000);
+	system_delay_ms(1000);
 
 	//	If FLASH cannot storage anymore datas, please delete codes below.
 	ST7789_Fill_Color(WHITE);
 	ST7789_DrawImage(0, 0, 128, 128, (uint16_t *)saber);
-	HAL_Delay(3000);
+	system_delay_ms(3000);
 }
 */

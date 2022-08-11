@@ -3,31 +3,9 @@
 
 #include <stdint.h>
 
-/* choose a Hardware SPI port to use. */
-// #define ST7789_SPI_PORT hspi1
-// extern SPI_HandleTypeDef ST7789_SPI_PORT;
-
-/* choose whether use DMA or not */
-// #define USE_DMA
-
-/* If u need CS control, comment below*/
-//#define CFG_NO_CS
-
-/* Pin connection*/
-// #define ST7789_RST_PORT ST7789_RST_GPIO_Port
-// #define ST7789_RST_PIN  ST7789_RST_Pin
-// #define ST7789_DC_PORT  ST7789_DC_GPIO_Port
-// #define ST7789_DC_PIN   ST7789_DC_Pin
-
-// #ifndef CFG_NO_CS
-// #define ST7789_CS_PORT  ST7789_CS_GPIO_Port
-// #define ST7789_CS_PIN   ST7789_CS_Pin
-
-
 /* If u need Backlight control, uncomment below */
 //#define BLK_PORT
 //#define BLK_PIN
-
 
 /*
  * Comment one to use another.
@@ -38,13 +16,14 @@
 
 /* Choose a type you are using */
 //#define USING_135X240
-#define USING_240X240
+// #define USING_240X240
 //#define USING_170X320
+#define USING_240X320 1
 
 /* Choose a display rotation you want to use: (0-3) */
-//#define ST7789_ROTATION 0
-//#define ST7789_ROTATION 1
-#define ST7789_ROTATION 2				//  use Normally on 240x240
+// #define ST7789_ROTATION 0
+#define ST7789_ROTATION 1
+// #define ST7789_ROTATION 2				//  use Normally on 240x240
 //#define ST7789_ROTATION 3
 
 #ifdef USING_135X240
@@ -79,6 +58,27 @@
 
 #endif
 
+#ifdef USING_240X320
+
+    #define ST7789_WIDTH 320
+    #define ST7789_HEIGHT 240
+
+		#if ST7789_ROTATION == 0
+			#define X_SHIFT 0
+			#define Y_SHIFT 0
+		#elif ST7789_ROTATION == 1
+			#define X_SHIFT 0
+			#define Y_SHIFT 0
+		#elif ST7789_ROTATION == 2
+			#define X_SHIFT 0
+			#define Y_SHIFT 0
+		#elif ST7789_ROTATION == 3
+			#define X_SHIFT 0
+			#define Y_SHIFT 0
+		#endif
+
+#endif
+
 #ifdef USING_240X240
 
     #define ST7789_WIDTH 240
@@ -99,6 +99,7 @@
 		#endif
 
 #endif
+
 
 #ifdef USING_170X320
 
@@ -200,7 +201,7 @@
 /* Line Address Order ('0' = LCD Refresh Top to Bottom, '1' = the opposite) */
 #define ST7789_MADCTL_ML  0x10
 /* RGB/BGR Order ('0' = RGB, '1' = BGR) */
-#define ST7789_MADCTL_RGB 0x00
+#define ST7789_MADCTL_RGB 0x08
 
 #define ST7789_RDID1   0xDA
 #define ST7789_RDID2   0xDB
@@ -220,6 +221,7 @@ void ST7789_Fill_Color(uint16_t color);
 void ST7789_DrawPixel(uint16_t x, uint16_t y, uint16_t color);
 void ST7789_Fill(uint16_t xSta, uint16_t ySta, uint16_t xEnd, uint16_t yEnd, uint16_t color);
 void ST7789_DrawPixel_4px(uint16_t x, uint16_t y, uint16_t color);
+void ST7789_Fill_Line(uint16_t y, const uint8_t *data, const uint8_t *palette);
 
 /* Graphical functions. */
 void ST7789_DrawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);

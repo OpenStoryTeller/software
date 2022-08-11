@@ -27,6 +27,7 @@
         "system_error": "cpp",
         "type_traits": "cpp",
         "variant": "cpp",
-        "arduino_platform.h": "c"
+        "arduino_platform.h": "c",
+        "st7789.h": "c"
     }
 }

@@ -8,6 +8,8 @@
 
 #include "string.h"
 #include "debug.h"
+#include "st7789.h"
+#include "spi_display.h"
 
 #include "arduino_platform.h"
 
@@ -81,8 +83,11 @@ void system_initialize()
 
     timer_set_period(PERIOD_FAST);
 
-    // Initialize SPI
+    // Initialize SPI for SD Card
     spi_init(250000, 0);
+
+    // SPI for display
+    spi_display_init(10000000, 0);
 
     HAL_GPIO_CD_in(); 
     HAL_GPIO_CD_pullup();
@@ -165,7 +170,7 @@ void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr)
 {
     for (uint32_t i = 0; i < btr; i++)
     {
-        buff[i] = spi_transfer(0xff);
+        buff[i] = spi_transfer(buff[i]);
     }
 }
 
@@ -179,22 +184,33 @@ void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr)
 
 void ost_display_initialize()
 {
-
+  ST7789_Init();
+  ST7789_Fill_Color(MAGENTA);
 }
 
 void ost_display_dc_high()
 {
-
+  spi_display_dc(1);
 }
 
 void ost_display_dc_low()
 {
+  spi_display_dc(0);
+}
 
+void ost_display_ss_high()
+{
+  spi_display_ss(1);
+}
+
+void ost_display_ss_low()
+{
+  spi_display_ss(0);
 }
 
 void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
 {
-
+  ST7789_Fill_Line(y, pixels, palette);
 }
 
 uint8_t ost_display_transfer_byte(uint8_t dat)
@@ -206,7 +222,7 @@ void ost_display_transfer_multi (uint8_t *buff, uint32_t btr)
 {
     for (uint32_t i = 0; i < btr; i++)
     {
-        buff[i] = spi_display_transfer(0xff);
+        buff[i] = spi_display_transfer(buff[i]);
     }
 }
 
