@@ -24,6 +24,27 @@ The firmware is highly configurable and highly portable. To achieve that, it is 
 
 The core is written in pure C, targets implementations may add other languages and libraries (QML/C++/python ...).
 
+## GCC build system
+
+The project uses CMake as build system. For the embedded targets, the main CMakeLists.txt includes a generic cross compiler file that should be good for many configurations as soon as your compiler is GCC.
+
+## Invocation
+
+1. Create a build directory (mkdir build)
+2. Invoke cmake with some options, passed as definitions for CMake (-D<option>)
+
+| Option | Role |
+|---|---|
+| TOOLCHAIN      |   specify the prefix name of the cross GCC binary    |
+| CMAKE_TOOLCHAIN_FILE      |  Includes before everything else a compiler toolchain file      |
+| CMAKE_BUILD_TYPE      |  Debug or Release (default ?)      |
+| OST_BUNDLE      |  Specify the bundle name to build     |
+| TOOLCHAIN_DIR      |  Specify a directory for the cross-gcc toolchain location    |
+
+
+Example: `cmake -DTOOLCHAIN=riscv64-unknown-elf -DCMAKE_TOOLCHAIN_FILE=cmake/cross-gcc.cmake  -DCMAKE_BUILD_TYPE=Debug -DOST_BUNDLE=LONGAN_NANO ..`
+
+
 # Hardware bundles
 
 Here is a list of currently supported bundles. A bundle is a collection of electronics boards that are supported by official firmware builds.
@@ -58,6 +79,28 @@ Convert tools:
 
 - riscv64-unknown-elf-objcopy -O binary your-file.elf your-file.hex
 - riscv64-unknown-elf-objcopy -O ihex your-file.elf your-file.hex
+
+### Wiring
+
+TBD
+
+## Arduino MKR Zero (SAMD21G18A)
+
+| Category | Maker |  Name  | Rounded Price |
+|---|---|---|---|
+|Main CPU board      | Arduino        | MKR Zero    |  30€  |
+| Audio              |              |                |  15€ |
+| Memory storage     | Included SD card slot on board |                |  -   |
+| Battery management | Included LiPo charger on board             |                |  - |
+| Display | NewHaven  2.4" TFT        |    NHD-2.4-240320CF-BSXV            |  22€ |
+
+### How to build
+
+Install on Ubuntu : 
+- sudo apt install gcc-arm-none-eabi
+- sudo apt install picolibc-arm-none-eabi
+
+cmake -DTOOLCHAIN=arm-none-eabi -DCMAKE_TOOLCHAIN_FILE=cmake/cross-gcc.cmake  -DCMAKE_BUILD_TYPE=Debug -DOST_BUNDLE=MKR_ZERO ..
 
 ### Wiring
 

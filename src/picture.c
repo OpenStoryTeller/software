@@ -260,7 +260,7 @@ void decompress()
             if (pixel == info_header.width)
             {
                 // enough pixels to write a line to the screen
-                disp_draw_h_line(pos.y, decompressed, palette);
+                ost_display_draw_h_line(pos.y, decompressed, palette);
                 debug_printf("POS Y: %d", pos.y);
 
                 memset(decompressed, 0, sizeof(decompressed));

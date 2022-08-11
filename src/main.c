@@ -15,7 +15,7 @@ int main(void)
     filesystem_mount();
 
     // Display
-    display_initialize();
+    ost_display_initialize();
     decompress();
 
     // Audio

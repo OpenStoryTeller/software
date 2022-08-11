@@ -105,7 +105,7 @@
 
 static void LCD_Write_DATA(unsigned char data)
 {
-	display_dc_high();
+	ost_display_dc_high();
   spi0_cs_low();
 	xchg_spi0(data);
   spi0_cs_high();
@@ -113,7 +113,7 @@ static void LCD_Write_DATA(unsigned char data)
 
 static void LCD_Write_COM(unsigned char com)
 {
-	display_dc_low();
+	ost_display_dc_low();
 	spi0_cs_low();
 	xchg_spi0(com);
 	spi0_cs_high();
@@ -124,10 +124,10 @@ uint8_t Read_Register(uint8_t Addr, uint8_t xParameter)
     uint8_t data=0;
     LCD_Write_COM(0xd9);                                                      /* ext command                  */
     LCD_Write_DATA(0x10+xParameter);                                        /* 0x11 is the first Parameter  */
-    display_dc_low();
+    ost_display_dc_low();
 	  spi0_cs_low();
     xchg_spi0(Addr);
-    display_dc_high();
+    ost_display_dc_high();
     data = xchg_spi0(0);
    	spi0_cs_high();
     return data;
@@ -345,7 +345,7 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 void ili9341_draw_h_line(uint16_t y, const uint8_t *data, const uint8_t *palette)
 {
 	ili9341_adressSet(0, y, 320, 240);
-  display_dc_high();
+  ost_display_dc_high();
   spi0_cs_low();	
 
   color_t color;
@@ -386,7 +386,7 @@ void ili9341_fill()
   for (uint16_t j = 0; j < 240; j++)
   {
     ili9341_adressSet(0, j, 320, 240);
-    display_dc_high();
+    ost_display_dc_high();
     spi0_cs_low();
     uint8_t hi = pixel>>8;
     uint8_t lo = pixel;

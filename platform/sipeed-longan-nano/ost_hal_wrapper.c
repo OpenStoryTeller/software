@@ -270,7 +270,7 @@ void sdcard_spi_recv_multi (uint8_t *buff, uint32_t btr)
 #define DC_GPIO_PORT GPIOA
 #define DC_GPIO_CLK RCU_GPIOA
 
-void display_initialize()
+void ost_display_initialize()
 {
     // Init DC GPIO
     rcu_periph_clock_enable(DC_GPIO_CLK);
@@ -287,17 +287,17 @@ void display_initialize()
     ili9341_fill();
 }
 
-void display_dc_high()
+void ost_display_dc_high()
 {
     GPIO_BOP(DC_GPIO_PORT) = DC_PIN;
 }
 
-void display_dc_low()
+void ost_display_dc_low()
 {
     GPIO_BC(DC_GPIO_PORT) = DC_PIN;
 }
 
-void disp_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
+void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
 {
     ili9341_draw_h_line(y, pixels, palette);
 }

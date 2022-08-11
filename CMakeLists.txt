@@ -66,7 +66,7 @@ if(${OST_BUNDLE} STREQUAL "LONGAN_NANO")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/platform/sipeed-longan-nano)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/platform/sipeed-longan-nano)
 
-    # Add middleware files
+    # ------ MIDDLEWARE
     target_sources(${PROJECT_NAME} PRIVATE library/ili9341.c)
 
     # link with gcc for software library such as float calculation (__udivdi3 ...)
@@ -85,10 +85,17 @@ elseif(${OST_BUNDLE} STREQUAL "MKR_ZERO")
     SET(CPU_TARGET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21/include.cmake)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cpu/atmel-samd21)
+
+    # ------ PLATFORM
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/platform/arduino-mkr-zero)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/platform/arduino-mkr-zero)
+
+    # ------ MIDDLEWARE
+    target_sources(${PROJECT_NAME} PRIVATE library/st7789.c)
     
     add_library(BUNDLE_LIBRARIES INTERFACE)
     target_link_libraries(BUNDLE_LIBRARIES INTERFACE "-Wl,--start-group" 
-        gcc m c stdc++ atmel-samd21 "-Wl,--end-group")
+        gcc m c stdc++ atmel-samd21 arduino-mkr-zero "-Wl,--end-group")
 
     # target_link_directories(BUNDLE_LIBRARIES INTERFACE ${CMAKE_SOURCE_DIR}/libs/CMSIS/CMSIS/Lib/GCC)
 

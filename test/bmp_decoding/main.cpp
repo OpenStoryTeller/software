@@ -4,7 +4,7 @@
 
 MainWindow *w_ptr = nullptr;
 
-extern "C" void disp_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
+extern "C" void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *palette)
 {
     if (w_ptr != nullptr)
     {
