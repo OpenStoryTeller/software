@@ -92,13 +92,13 @@ uint8_t parse_bmp(const uint8_t *data, bmp_header_t *header, bmp_infoheader_t *i
     return isBmp;
 }
 
-void decompress()
+void decompress(const char *filename)
 {
     file_t fil;
     uint32_t offset;
     unsigned int br;
 
-    fil = ost_file_open("0_000_314CBAA1.bmp");
+    fil = ost_file_open(filename); //"0_000_314CBAA1.bmp");
     offset = 0;
 
 #ifdef OST_USE_FF_LIBRARY

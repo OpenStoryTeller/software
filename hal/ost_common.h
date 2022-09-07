@@ -1,6 +1,11 @@
 #ifndef OST_COMMON_H
 #define OST_COMMON_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 
 #define OST_ID_SPI_FOR_SDCARD   0
@@ -34,6 +39,7 @@ typedef struct {
 void system_initialize();
 void system_putc(char ch);
 void system_delay_ms(uint32_t delay);
+void system_led_write(uint8_t value);
 
 // ----------------------------------------------------------------------------
 // SDCARD HAL
@@ -70,5 +76,9 @@ void ost_display_ss_high();
 void ost_display_ss_low();
 uint8_t ost_display_transfer_byte(uint8_t dat);
 void ost_display_transfer_multi (uint8_t *buff, uint32_t btr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // OST_COMMON_H

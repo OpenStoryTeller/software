@@ -39,6 +39,7 @@ add_executable(
     src/debug.c
     src/picture.c
     src/filesystem.c
+    src/ost_tasker.c
     src/ff/ff.c
     src/ff/ffsystem.c
     src/ff/ff_stubs.c

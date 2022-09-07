@@ -18,7 +18,7 @@ void Reset_Handler    (void);
 void NMI_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
 void SVC_Handler      (void) __attribute__ ((weak, alias("Dummy_Handler")));
 void PendSV_Handler   (void) __attribute__ ((weak, alias("Dummy_Handler")));
-void SysTick_Handler  (void); __attribute__ ((weak, alias("Dummy_Handler")));
+void SysTick_Handler  (void) __attribute__ ((weak, alias("Dummy_Handler")));
 
 /* Peripherals handlers */
 void PM_Handler       (void) __attribute__ ((weak, alias("Dummy_Handler")));

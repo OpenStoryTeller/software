@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-void decompress();
+void decompress(const char *filename);
 
 #ifdef __cplusplus
 }
