@@ -8,23 +8,14 @@
 #include "IconsFontAwesome5.h"
 #include <functional>
 
-uint32_t mWidth = 1152;
-uint32_t mHeight = 648;
 
-const uint32_t mMinimumWidth = 1152;
-const uint32_t mMinimumHeight = 648;
 
-Uint64 currentTick = 0;
-Uint64 lastTick = 0;
-double deltaTime = 0;
+void SdlWrapper::GetWindowSize(int *w, int *h)
+{
+    SDL_GetWindowSize(mWindow, w, h);
+}
 
-ImFont* mNormalFont = nullptr;
-ImFont* mBigFont = nullptr;
-
-SDL_Window *mWindow = nullptr;
-SDL_Renderer *mRenderer = nullptr;
-
-int sdl_wrapper_init()
+int SdlWrapper::Initialize()
 {
     // initiate SDL
      if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS |
@@ -151,12 +142,7 @@ int sdl_wrapper_init()
      return mRenderer != nullptr;
 }
 
-const int FPS = 60;
-const int frameDelay = 1000 / FPS;
-Uint32 frameStart;
-int frameTime;
-
-int sdl_wrapper_process(std::function<void(SDL_Renderer *renderer, double)> sdl_draw_callback)
+int SdlWrapper::Process()
 {
     // Stores the number of ticks at the start of the loop
     frameStart = SDL_GetTicks();
@@ -207,7 +193,7 @@ int sdl_wrapper_process(std::function<void(SDL_Renderer *renderer, double)> sdl_
     deltaTime = (double)((currentTick - lastTick)*1000 / (double)SDL_GetPerformanceFrequency() );
 
 
-    sdl_draw_callback(mRenderer, deltaTime);
+    Update(mRenderer, deltaTime);
 
     // rendering
     ImGui::Render();
@@ -227,7 +213,7 @@ int sdl_wrapper_process(std::function<void(SDL_Renderer *renderer, double)> sdl_
     return 0;
 }
 
-void sdl_wrapper_close()
+void SdlWrapper::Close()
 {
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -236,10 +222,4 @@ void sdl_wrapper_close()
     SDL_DestroyRenderer(mRenderer);
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
-}
-
-
-void sdl_wrapper_get_window_size(int *w, int *h)
-{
-    SDL_GetWindowSize(mWindow, w, h);
 }

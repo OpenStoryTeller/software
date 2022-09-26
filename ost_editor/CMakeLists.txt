@@ -18,6 +18,7 @@ set(OST_ROOT  ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(IMGUI_DIR ${OST_EDITOR_ROOT}/imgui)
 set(IMGUI_NODE_EDITOR_DIR ${OST_EDITOR_ROOT}/imnodes)
 set(IMGUI_KNOBS_DIR ${OST_EDITOR_ROOT}/imgui-knobs)
+set(IMGUI_TEXT_EDIT_DIR ${OST_EDITOR_ROOT}/ImGuiColorTextEdit)
 
 #=========================================================================================================================
 # SOURCES
@@ -26,12 +27,14 @@ set(PROJECT_SOURCES
 
     # ----------------  EDITOR FILES  ----------------
     ${OST_EDITOR_ROOT}/src/main.cpp
-    ${OST_EDITOR_ROOT}/src/chip8.c
-    ${OST_EDITOR_ROOT}/src/chip8.h
     ${OST_EDITOR_ROOT}/src/sdl_wrapper.cpp
     ${OST_EDITOR_ROOT}/src/imgui_memory_editor.h
     ${OST_EDITOR_ROOT}/src/sdl_wrapper.h
     ${OST_EDITOR_ROOT}/src/IconsFontAwesome5.h
+    ${OST_EDITOR_ROOT}/src/code_editor.cpp
+    ${OST_EDITOR_ROOT}/src/code_editor.h
+    ${OST_EDITOR_ROOT}/src/console_window.cpp
+    ${OST_EDITOR_ROOT}/src/console_window.h
 
     # ----------------  OST IMPLEMENTATION USING SDL  ----------------
     ${OST_EDITOR_ROOT}/src/ost_wrapper.cpp
@@ -42,6 +45,12 @@ set(PROJECT_SOURCES
     ${OST_ROOT}/src/picture.h
     ${OST_ROOT}/src/debug.c
     ${OST_ROOT}/src/debug.h
+
+    # ----------------  VIRTUAL MACHINE FILES  ----------------
+    ${OST_EDITOR_ROOT}/src/chip32_assembler.h
+    ${OST_EDITOR_ROOT}/src/chip32_assembler.cpp
+    ${OST_ROOT}/common/chip32.h
+    ${OST_ROOT}/common/chip32.cpp
 
     # ----------------  IMGUI  ----------------
     ${IMGUI_DIR}/imgui.cpp
@@ -56,6 +65,8 @@ set(PROJECT_SOURCES
     ${IMGUI_NODE_EDITOR_DIR}/imnodes.h
     ${IMGUI_KNOBS_DIR}/imgui-knobs.cpp
     ${IMGUI_KNOBS_DIR}/imgui-knobs.h
+    ${IMGUI_TEXT_EDIT_DIR}/TextEditor.cpp
+    ${IMGUI_TEXT_EDIT_DIR}/TextEditor.h
 
 )
 
@@ -63,10 +74,12 @@ set(OST_EDITOR_INCLUDES
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${IMGUI_NODE_EDITOR_DIR}
+    ${IMGUI_TEXT_EDIT_DIR}
     ${OST_EDITOR_ROOT}/src
     ${IMGUI_KNOBS_DIR}
     ${OST_ROOT}/src
     ${OST_ROOT}/hal
+    ${OST_ROOT}/common
 )
 
 #=========================================================================================================================

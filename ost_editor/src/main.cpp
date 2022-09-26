@@ -16,13 +16,14 @@
 #include "ost_wrapper.h"
 
 #include "ost_common.h"
+#include "code_editor.h"
+#include "console_window.h"
+#include "chip32_assembler.h"
 
 #define NODE_TYPE_IMAGE     1
 #define NODE_TYPE_SOUND     2
 #define NODE_TYPE_ADDER     3
-
-
-
+#define NODE_TYPE_WAIT_EVENT  4
 
 void draw_memory_editor()
 {
@@ -74,6 +75,74 @@ public:
     }
 };
 
+class WaitForEvent : public INode
+{
+public:
+
+    virtual void draw() override {
+
+        ImNodes::BeginNode(NODE_TYPE_WAIT_EVENT);
+
+        int attr_id = 1;
+
+        ImNodes::BeginNodeTitleBar();
+        ImGui::TextUnformatted("Wait event");
+        ImNodes::EndNodeTitleBar();
+
+        ImNodes::BeginInputAttribute(attr_id++);
+        ImGui::Text("Begin wait");
+        ImNodes::EndInputAttribute();
+
+        ImNodes::BeginInputAttribute(attr_id++);
+
+        static ImGuiComboFlags flags = 0;
+        const char* items[] = { "Button", "Delay", "Low battery" };
+        static int item_current_idx = 0; // Here we store our selection data as an index.
+        const char* combo_preview_value = items[item_current_idx];  // Pass in the preview value visible before opening the combo (it could be anything)
+        if (ImGui::BeginCombo("event_type", combo_preview_value, flags))
+        {
+            for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+            {
+                const bool is_selected = (item_current_idx == n);
+                if (ImGui::Selectable(items[n], is_selected))
+                    item_current_idx = n;
+
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImNodes::EndInputAttribute();
+
+
+
+        ImNodes::BeginOutputAttribute(attr_id++);
+        // in between Begin|EndAttribute calls, you can call ImGui
+        // UI functions
+        ImGui::Indent(40);
+        ImGui::Text("Button");
+        ImNodes::EndOutputAttribute();
+
+        ImNodes::BeginOutputAttribute(attr_id++);
+        // in between Begin|EndAttribute calls, you can call ImGui
+        // UI functions
+        ImGui::Indent(40);
+        ImGui::Text("Delay");
+        ImNodes::EndOutputAttribute();
+
+        ImNodes::BeginOutputAttribute(attr_id++);
+        // in between Begin|EndAttribute calls, you can call ImGui
+        // UI functions
+        ImGui::Indent(40);
+        ImGui::Text("Low battery");
+        ImNodes::EndOutputAttribute();
+
+        ImNodes::EndNode();
+    }
+};
+
 class ShowImage : public INode
 {
 public:
@@ -117,105 +186,6 @@ public:
         ImNodes::EndNode();
     }
 };
-/*
-
-class ImGuiImage
-{
-public:
-    ~ImGuiImage() {
-        if (m_texture != nullptr)
-        {
-            SDL_DestroyTexture(m_texture);
-        }
-    }
-
-    void Create(SDL_Renderer *renderer)
-    {
-        m_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_TARGET, 320, 240);
-
-        // Switch the renderer to the texture
-        SDL_SetRenderTarget(renderer, m_texture);
-
-
-        // Switch back to main screen renderer
-        SDL_SetRenderTarget(renderer, NULL);
-
-
-    }
-
-    void Load(SDL_Renderer *renderer, const char* filename)
-    {
-        // Read data
-        int32_t width, height, bytesPerPixel;
-        void* data = stbi_load(filename, &width, &height, &bytesPerPixel, 0);
-
-        // Calculate pitch
-        int pitch;
-        pitch = width * bytesPerPixel;
-        pitch = (pitch + 3) & ~3;
-
-        // Setup relevance bitmask
-        int32_t Rmask, Gmask, Bmask, Amask;
-    #if SDL_BYTEORDER == SDL_LIL_ENDIAN
-        Rmask = 0x000000FF;
-        Gmask = 0x0000FF00;
-        Bmask = 0x00FF0000;
-        Amask = (bytesPerPixel == 4) ? 0xFF000000 : 0;
-    #else
-        int s = (bytesPerPixel == 4) ? 0 : 8;
-        Rmask = 0xFF000000 >> s;
-        Gmask = 0x00FF0000 >> s;
-        Bmask = 0x0000FF00 >> s;
-        Amask = 0x000000FF >> s;
-    #endif
-        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(data, width, height, bytesPerPixel*8, pitch, Rmask, Gmask, Bmask, Amask);
-        m_texture = nullptr;
-        if (surface)
-        {
-            m_texture = SDL_CreateTextureFromSurface(renderer, surface);
-        }
-        else
-        {
-            // default texture (image loading problem)
-            m_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 20, 20);
-        }
-
-        STBI_FREE(data);
-        SDL_FreeSurface(surface);
-
-
-        int w, h = 0;
-        // get the width and height of the texture
-        if (SDL_QueryTexture(m_texture, NULL, NULL, &w, &h) == 0)
-        {
-            m_w = w;
-            m_h = h;
-        }
-        else
-        {
-            m_w = 20;
-            m_h = 20;
-        }
-    }
-
-    void draw() {
-        if (m_texture != nullptr)
-        {
-            // Actually display the image
-            ImGui::Image(m_texture, ImVec2((float)m_w, (float)m_h));
-        }
-    }
-
-private:
-    SDL_Texture *m_texture{nullptr};
-    int m_w{0};
-    int m_h{0};
-};
-*/
-
-
-
-
 
 
 void draw_node_editor()
@@ -223,10 +193,17 @@ void draw_node_editor()
     ImGui::SetNextWindowSize(ImVec2(600, 400));
     ImGui::Begin("node editor");
 
-    std::vector<std::unique_ptr<INode>> nodes;
+    static std::vector<std::unique_ptr<INode>> nodes;
+    static bool one_time = true;
 
-    nodes.push_back(std::make_unique<Adder>());
-    nodes.push_back(std::make_unique<ShowImage>());
+    if (one_time)
+    {
+        one_time = false;
+        nodes.push_back(std::make_unique<Adder>());
+        nodes.push_back(std::make_unique<ShowImage>());
+        nodes.push_back(std::make_unique<WaitForEvent>());
+    }
+
 
     ImNodes::BeginNodeEditor();
 
@@ -377,36 +354,82 @@ void draw_editor_layout()
 
 }
 
-
-
-
-void sdl_draw_callback(SDL_Renderer *renderer, double deltaTime)
+class App : public SdlWrapper
 {
-    draw_editor_layout();
-    draw_memory_editor();
-    draw_node_editor();
-    draw_ost_device(renderer, deltaTime);
-}
+public:
 
+    int Update(SDL_Renderer *renderer, double deltaTime) override
+    {
+        draw_editor_layout();
+        draw_memory_editor();
+        draw_node_editor();
+        draw_ost_device(renderer, deltaTime);
+        code_editor_draw();
+
+        m_console.Draw("Console", nullptr);
+
+        return 0;
+    }
+
+private:
+    ConsoleWindow m_console;
+};
+
+
+static const std::string test1 = R"(; jump over the data, to our entry label
+    jump         entry
+
+$hello          bytes  "Hello world!", 0x0A  ; data
+
+; label definition
+entry:   ;; comment here should work
+    mov      r0, r2  ; copy R2 into R0 (blank space between , and R2)
+mov R0,R2  ; copy R2 into R0 (NO blank space between , and R2)
+
+    jump entry
+    halt
+)";
+
+#include "chip32.h"
 
 int main()
 {
-    sdl_wrapper_init();
+    std::vector<uint8_t> program;
+    Chip32Assembler assembler;
+    assembler.Parse(test1);
+    assembler.BuildBinary(program);
+
+    uint16_t progSize = program.size();
+
+    // Add RAM after program
+    program.resize(8*1024);
+
+    chip32_initialize(program.data(), program.size(), 256);
+    chip32_run(progSize, 1000);
+
+    return 0;
+    /*
+    App app;
+
+    app.Initialize();
 
     ImNodes::CreateContext();
 
+    code_editor_initialize();
 
     int ev = 0;
     do
     {
-       ev = sdl_wrapper_process(sdl_draw_callback);
+       ev = app.Process();
     }
     while (ev != SDL_EV_QUIT);
 
     ImNodes::DestroyContext();
-    sdl_wrapper_close();
+
+    app.Close();
 
     std::cout << "OST Editor exit" << std::endl;
 
     return 0;
+    */
 }

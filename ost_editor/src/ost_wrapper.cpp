@@ -8,7 +8,7 @@
 #include "ost_common.h"
 #include "ost_wrapper.h"
 #include "picture.h"
-//
+
 static SDL_Texture *display_texture{nullptr};
 
 
@@ -43,6 +43,7 @@ extern "C" void ost_display_draw_h_line(uint16_t y, uint8_t *pixels, uint8_t *pa
         image_buffer[i][y] = color;
     }
 }
+
 
 
 static void ost_impl_show_image(SDL_Renderer *renderer, const char *fileName)

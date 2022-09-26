@@ -1,0 +1,82 @@
+{
+	"__comment_variables":"8-bits for now, to simplify assembly generation", 
+	"variables": [
+		{
+		 "type": "U8",
+		 "name": "counter"
+		}
+	],
+	"nodes": [
+	{
+        "id": "{00000000-}",
+		"x": 324.5,
+		"y": 627.02,
+		"class": "actuator",
+		"type": "image",
+		"properties": {
+			"file": "oiseau.bmp"
+		}
+	},
+	{
+        "id": "{fkldsfsq-1235fds-fsd4}",
+		"x": 324.5,
+		"y": 627.02,
+		"class": "actuator",
+		"type": "image",
+		"properties": {
+			"file": "oiseau.bmp"
+		}
+	},
+	{
+        "id": "{dddddddd-4444444444}",
+		"x": 324.5,
+		"y": 627.02,
+		"class": "actuator",
+		"type": "image",
+		"properties": {
+			"file": "poney.bmp"
+		}
+	},
+	{
+		"__comment": "sensor class wait for input event, ",
+		"id": "{99999999999}",
+		"x": 324.5,
+		"y": 627.02,
+		"class": "event",
+		"type:": "input",
+		"properties": {
+			"__comment": "list of nodes to execute, in that order",
+			"rotary_left": [
+				0
+			],
+			"rotary_right": [
+				1
+			],
+			"button_ok": [
+				
+			]
+		},
+		
+		"__comment_wires": "list of nodes linked to",
+		"wires": [
+			"{fkldsfsq-1235fds-fsd4}",
+			"{dddddddd-4444444444}"
+		]
+	},
+	{
+		"__comment": "deux entrées",
+		"id": "{1111111111111111}",
+		"class": "switch",
+		"type:": "number",
+		"properties": {
+			"__comment": "// Inferieur (INF) ;  Inferieur ou égale (IEQ) ;  Supérieur (SUP) ;  Supérieur ou égal (SEQ) ;  Egale (EQU) ;  Diffèrent de (DIF) ;",
+			"condition": "INF" 
+		}
+	}
+	
+	
+	
+	]
+
+}
+
