@@ -7,15 +7,12 @@
 #include "imgui_memory_editor.h"
 #include "imnodes.h"
 #include "IconsFontAwesome5.h"
-#include "SDL.h"
-#include "imgui-knobs.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "ost_wrapper.h"
 
-#include "ost_common.h"
 #include "code_editor.h"
 #include "console_window.h"
 #include "chip32_assembler.h"
@@ -421,8 +418,12 @@ int main()
 {
     std::vector<uint8_t> program;
     Chip32Assembler assembler;
+    AssemblyResult result;
+
     assembler.Parse(test1);
-    assembler.BuildBinary(program);
+    assembler.BuildBinary(program, result);
+
+    result.Print();
 
     uint16_t progSize = program.size();
 

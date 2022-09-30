@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <map>
+#include <iostream>
 
 struct OpCode {
     std::string mnemonic;
@@ -19,29 +20,15 @@ struct Instr {
     std::vector<std::string> args;
     std::vector<uint8_t> compiledArgs;
     OpCode code;
-    uint16_t dataBaseSize{0};
+    uint16_t dataTypeSize{0};
+    uint16_t dataLen{0};
 
     bool isLabel{false}; //!< If true, this is a label, otherwise it is an instruction
     bool useLabel{false}; //!< If true, the instruction uses a label
-    bool isData{false}; //!< True is constant data in program
-    bool isRom{false}; //!< True in RAM, else in ROM
+    bool isRomData{false}; //!< True is constant data in program
+    bool isRamData{false}; //!< True is constant data in program
 
     uint16_t addr{0}; //!< instruction address when assembled in program memory
-
-    void Copy(std::vector<uint8_t> &mem)
-    {
-        addr = mem.size();
-
-        if (!isData)
-        {
-            mem.push_back(code.opcode);
-        }
-
-        for (auto a : compiledArgs)
-        {
-            mem.push_back(a);
-        }
-    }
 };
 
 struct RegNames
@@ -50,12 +37,36 @@ struct RegNames
     std::string name;
 };
 
+struct AssemblyResult
+{
+    int ramUsageSize{0};
+    int romUsageSize{0};
+    int constantsSize{0};
+
+    void Print()
+    {
+        std::cout << "RAM usage: " << ramUsageSize << " bytes\n"
+                  << "IMAGE size: " << romUsageSize << " bytes\n"
+                  << "   -> ROM DATA: " << constantsSize << " bytes\n"
+                  << "   -> ROM CODE: " << romUsageSize - constantsSize << "\n"
+                  << std::endl;
+
+    }
+};
+
 
 class Chip32Assembler
 {
 public:
-    void BuildBinary(std::vector<uint8_t> &program);
+    // Separated parser to allow only code check
     bool Parse(const std::string &data);
+    // Generate the executable binary after the parse pass
+    bool BuildBinary(std::vector<uint8_t> &program, AssemblyResult &result);
+
+    void Clear() {
+        m_labels.clear();
+        m_instructions.clear();
+    }
 
 private:
     bool CompileMnemonicArguments(Instr &instr);
