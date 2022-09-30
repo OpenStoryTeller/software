@@ -7,7 +7,7 @@
 #include "imgui_memory_editor.h"
 #include "imnodes.h"
 #include "IconsFontAwesome5.h"
-#include "SDL2/SDL.h"
+#include "SDL.h"
 #include "imgui-knobs.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -377,20 +377,45 @@ private:
 
 
 static const std::string test1 = R"(; jump over the data, to our entry label
-    jump         entry
+    jump         .entry
 
-$hello          bytes  "Hello world!", 0x0A  ; data
+$imageBird          DC8  "example.bmp", 8  ; data
+$someConstant       DC32  12456789
+
+; DSxx to declare a variable in RAM, followed by the number of elements
+$RamData1           DV32    1 ; one 32-bit integer
+$MyArray            DV8    10 ; array of 10 bytes
 
 ; label definition
-entry:   ;; comment here should work
+.entry:   ;; comment here should work
     mov      r0, r2  ; copy R2 into R0 (blank space between , and R2)
 mov R0,R2  ; copy R2 into R0 (NO blank space between , and R2)
 
-    jump entry
+    jump .entry
     halt
 )";
 
 #include "chip32.h"
+
+static void hexdump(void *ptr, int buflen) {
+  unsigned char *buf = (unsigned char*)ptr;
+  int i, j;
+  for (i=0; i<buflen; i+=16) {
+    printf("%06x: ", i);
+    for (j=0; j<16; j++)
+      if (i+j < buflen)
+        printf("%02x ", buf[i+j]);
+      else
+        printf("   ");
+    printf(" ");
+    for (j=0; j<16; j++)
+      if (i+j < buflen)
+        printf("%c", isprint(buf[i+j]) ? buf[i+j] : '.');
+    printf("\n");
+  }
+}
+
+static uint8_t data[8*1024];
 
 int main()
 {
@@ -401,10 +426,23 @@ int main()
 
     uint16_t progSize = program.size();
 
+    hexdump(program.data(), program.size());
+
     // Add RAM after program
     program.resize(8*1024);
 
-    chip32_initialize(program.data(), program.size(), 256);
+    virtual_mem_t rom = {
+        .mem = program.data(),
+        .size = 8*1024,
+        .addr = 0
+    };
+    virtual_mem_t ram = {
+        .mem = data,
+        .size = sizeof(data),
+        .addr = 56*1024
+    };
+
+    chip32_initialize(&rom, &ram, 256);
     chip32_run(progSize, 1000);
 
     return 0;

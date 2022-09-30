@@ -1,6 +1,6 @@
 
 #include "sdl_wrapper.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_sdlrenderer.h"

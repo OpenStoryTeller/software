@@ -28,18 +28,18 @@ THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
-#define _NEXT_BYTE g_memory[++g_registers[IP]]
-#define _NEXT_SHORT ({ g_registers[IP] += 2; g_memory[g_registers[IP]-1]\
-                     | g_memory[g_registers[IP]] << 8; })
+#define _NEXT_BYTE g_rom->mem[++g_registers[IP]]
+#define _NEXT_SHORT ({ g_registers[IP] += 2; g_rom->mem[g_registers[IP]-1]\
+                     | g_rom->mem[g_registers[IP]] << 8; })
 #define _NEXT_INT ({                                                                               \
     g_registers[IP] += 4;                                                                     \
-    g_memory[g_registers[IP] - 3] | g_memory[g_registers[IP] - 2] << 8 |       \
-        g_memory[g_registers[IP] - 1] << 16 | g_memory[g_registers[IP]] << 24; \
+    g_rom->mem[g_registers[IP] - 3] | g_rom->mem[g_registers[IP] - 2] << 8 |       \
+        g_rom->mem[g_registers[IP] - 1] << 16 | g_rom->mem[g_registers[IP]] << 24; \
 })
 
 #ifndef VM_DISABLE_CHECKS
 #define _CHECK_ADDR_VALID(a) \
-    if (a >= g_memory_size) \
+    if ((a < g_rom->addr) || (a >= (g_rom->addr + g_rom->size))) \
         return VM_ERR_INVALID_ADDRESS;
 #define _CHECK_BYTES_AVAIL(n) \
     _CHECK_ADDR_VALID(g_registers[IP] + n)
@@ -47,10 +47,10 @@ THE SOFTWARE.
     if (r >= REGISTER_COUNT)     \
         return VM_ERR_INVALID_REGISTER;
 #define _CHECK_CAN_PUSH(n)                                              \
-    if (g_registers[SP] - (n * sizeof(uint32_t)) < prog_size) \
+    if (g_registers[SP] - (n * sizeof(uint32_t)) > g_ram->addr) \
         return VM_ERR_STACK_OVERFLOW;
 #define _CHECK_CAN_POP(n)                                               \
-    if (g_registers[SP] + (n * sizeof(uint32_t)) > g_memory_size) \
+    if (g_registers[SP] + (n * sizeof(uint32_t)) > (g_ram->addr + g_ram->size) \
         return VM_ERR_STACK_UNDERFLOW;                      \
     if (g_registers[SP] < prog_size)                          \
         return VM_ERR_STACK_OVERFLOW;
@@ -62,23 +62,40 @@ THE SOFTWARE.
 #define _CHECK_CAN_POP(n)
 #endif
 
-static uint8_t *g_memory = NULL;
+static virtual_mem_t *g_ram = NULL;
+static virtual_mem_t *g_rom = NULL;
 static uint32_t g_registers[REGISTER_COUNT] = {0};
-static uint16_t g_memory_size;
 static uint16_t g_stack_size;
-
 
 bool (*g_interrupt_callback)(uint8_t) = nullptr;
 
 
-void chip32_initialize(uint8_t *memory, uint32_t mem_size, uint32_t stack_size)
+void chip32_initialize(virtual_mem_t *rom, virtual_mem_t *ram, uint16_t stack_size)
 {
-    g_memory = memory;
-    g_memory_size = mem_size;
+    g_ram = ram;
+    g_rom = rom;
     g_stack_size = stack_size;
 
+    memset(g_ram->mem, 0, g_ram->size);
     memset(g_registers, 0, REGISTER_COUNT * sizeof(uint32_t));
-    g_registers[SP] = mem_size;
+
+    g_registers[SP] = g_ram->size;
+}
+
+#define MEM_ACCESS(addr, vmem) if ((addr >= vmem->addr) && ((addr + vmem->size) < vmem->size))\
+{\
+    addr -= vmem->addr;\
+    return &vmem->mem[addr];\
+}
+
+uint8_t *chip32_memory(uint16_t addr)
+{
+    static uint8_t dummy = 0;
+    // Beware, can provoke memory overflow
+    MEM_ACCESS(addr, g_rom);
+    MEM_ACCESS(addr, g_ram);
+
+    return g_ram->mem; //!< Defaut memory to RAM location if address out of segment.
 }
 
 static void chip32_on_interrupt(bool (*callback)(uint8_t))
@@ -88,26 +105,21 @@ static void chip32_on_interrupt(bool (*callback)(uint8_t))
 
 uint32_t chip32_stack_count()
 {
-    return g_memory_size - g_registers[SP];
+    return g_ram->size - g_registers[SP];
 }
 
 void chip32_stack_push(uint32_t value)
 {
     g_registers[SP] -= 4;
-    memcpy(&g_memory[g_registers[SP]], &value, sizeof(uint32_t));
+    memcpy(chip32_memory(g_registers[SP]), &value, sizeof(uint32_t));
 }
 
 uint32_t chip32_stack_pop()
 {
     uint32_t val = 0;
-    memcpy(&val, &g_memory[g_registers[SP]], sizeof(uint32_t));
+    memcpy(&val, chip32_memory(g_registers[SP]), sizeof(uint32_t));
     g_registers[SP] += 4;
     return val;
-}
-
-uint8_t *chip32_memory(uint16_t addr)
-{
-    return &g_memory[addr];
 }
 
 uint32_t chip32_get_register(chip32_register_t reg)
@@ -127,7 +139,7 @@ chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
     while ((max_instr == 0) || (instrCount < max_instr))
     {
         _CHECK_ADDR_VALID(g_registers[IP])
-        const uint8_t instr = g_memory[g_registers[IP]];
+        const uint8_t instr = g_rom->mem[g_registers[IP]];
         if (instr >= INSTRUCTION_COUNT)
             return VM_ERR_UNKNOWN_OPCODE;
 
@@ -170,23 +182,6 @@ chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
             g_registers[reg] = _NEXT_INT;
             break;
         }
-        case OP_LCONSW:
-        {
-            _CHECK_BYTES_AVAIL(3)
-            const uint8_t reg = _NEXT_BYTE;
-            _CHECK_REGISTER_VALID(reg)
-            g_registers[reg] = _NEXT_SHORT;
-            break;
-        }
-        case OP_LCONSB:
-        {
-            _CHECK_BYTES_AVAIL(2)
-            const uint8_t reg = _NEXT_BYTE;
-            _CHECK_REGISTER_VALID(reg)
-            g_registers[reg] = _NEXT_BYTE;
-            break;
-        }
-
         case OP_JMP:
         {
             _CHECK_BYTES_AVAIL(2)

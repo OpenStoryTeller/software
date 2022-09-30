@@ -36,8 +36,7 @@ typedef enum
     OP_SYSCALL,  // system call handled by user-registered function, 4 arguments (R0 - R3) passed by value
     // constants:
     OP_LCONS,  // store a value in a register, e.g.: lcons r0, 0xA2 0x00 0x00 0x00
-    OP_LCONSW, // store a word value in a register, e.g.: lconsw r0, 0xA2 0x00
-    OP_LCONSB, // store a byte value in a register, e.g.: lconsb r0, 0xA2
+
     // register operations:
     OP_MOV, // copy a value between registers, e.g.: mov r0, r2
     // stack:
@@ -134,7 +133,36 @@ typedef enum
     VM_ERR_INVALID_ADDRESS,     // tried to access an invalid memory address
 } chip32_result_t;
 
-void chip32_initialize(uint8_t *memory, uint32_t mem_size, uint32_t stack_size);
+/**
+  Whole memory is 64KB
+
+  The RAM and ROM segments can be placed anywhere:
+   - they must not overlap
+   - there can have gaps between segments (R/W to a dummy byte if accessed)
+
+ -----------  0xFFFF
+ |         |
+ |         |
+ |---------|<-- stack start
+ |         |
+ |   RAM   |
+ |_________|
+ |         |
+ |_________|
+ |  ROM    |
+ |_________|
+ |         |
+ -----------  0x0000
+ */
+typedef struct
+{
+    uint8_t *mem; //!< Pointer to a real memory location (ROM or RAM)
+    uint16_t size; //!< Size of the real memory
+    uint16_t addr; //!< Start address of the virtual memory
+
+} virtual_mem_t;
+
+void chip32_initialize(virtual_mem_t *rom, virtual_mem_t *ram, uint16_t stack_size);
 chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr);
 
 #endif // CHIP32_H

@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <cstdint>
 
 // =============================================================================
 // GLOBAL UTILITY FUNCTIONS
@@ -46,8 +47,6 @@ static std::string ToLower(const std::string &text)
                                           [](unsigned char c){ return std::tolower(c); });
     return newText;
 }
-
-
 
 static const RegNames AllRegs[] = {
     { R0, "r0" },
@@ -98,8 +97,6 @@ static OpCode OpCodes[] = {
     { "halt", OP_HALT, 0 },
     { "syscall", OP_SYSCALL, 1 },
     { "lcons", OP_LCONS, 2 },
-    { "lconsw", OP_LCONSW, 2 },
-    { "lconsb", OP_LCONSB, 2 },
     { "mov", OP_MOV, 2 },
     { "push", OP_PUSH, 1 },
     { "pop", OP_POP, 1 },
@@ -143,26 +140,7 @@ static bool IsOpCode(const std::string &label, OpCode &op)
     return success;
 }
 
-static void hexdump(void *ptr, int buflen) {
-  unsigned char *buf = (unsigned char*)ptr;
-  int i, j;
-  for (i=0; i<buflen; i+=16) {
-    printf("%06x: ", i);
-    for (j=0; j<16; j++)
-      if (i+j < buflen)
-        printf("%02x ", buf[i+j]);
-      else
-        printf("   ");
-    printf(" ");
-    for (j=0; j<16; j++)
-      if (i+j < buflen)
-        printf("%c", isprint(buf[i+j]) ? buf[i+j] : '.');
-    printf("\n");
-  }
-}
-
-
-static void ParseArgs(Instr &instr, const std::string &data)
+static void GetArgs(Instr &instr, const std::string &data)
 {
     std::string value;
     std::istringstream iss(data);
@@ -193,14 +171,7 @@ static inline void leu16_put(std::vector<std::uint8_t> &container, uint16_t data
 // =============================================================================
 // ASSEMBLER CLASS
 // =============================================================================
-Chip32Assembler::Chip32Assembler()
-{
-
-}
-
-
-
-bool Chip32Assembler::CompileArguments(Instr &instr)
+bool Chip32Assembler::CompileMnemonicArguments(Instr &instr)
 {
     bool success = true;
 
@@ -215,27 +186,21 @@ bool Chip32Assembler::CompileArguments(Instr &instr)
         instr.compiledArgs.push_back(static_cast<uint8_t>(strtol(instr.args[0].c_str(),  NULL, 0)));
         break;
     case OP_LCONS:
-        leu32_put(instr.compiledArgs, static_cast<uint32_t>(strtol(instr.args[0].c_str(),  NULL, 0)));
+    {
+        uint8_t ra;
+        GET_REG(instr.args[0], ra);
+        instr.compiledArgs.push_back(ra);
+        leu32_put(instr.compiledArgs, static_cast<uint32_t>(strtol(instr.args[1].c_str(),  NULL, 0)));
         break;
-    case OP_LCONSW:
-        leu16_put(instr.compiledArgs, static_cast<uint16_t>(strtol(instr.args[0].c_str(),  NULL, 0)));
-        break;
-    case OP_LCONSB:
-        instr.compiledArgs.push_back(static_cast<uint8_t>(strtol(instr.args[0].c_str(),  NULL, 0)));
-        break;
-
+    }
     case OP_POP:
     case OP_PUSH:
+    {
         uint8_t ra;
-        if (GetRegister(instr.args[0], ra))
-        {
-            instr.compiledArgs.push_back(ra);
-        }
-        else
-        {
-            std::cout << "ERROR! Bad register name: " << instr.args[1] << std::endl;
-        }
+        GET_REG(instr.args[0], ra);
+        instr.compiledArgs.push_back(ra);
         break;
+    }
     case OP_MOV:
     {
         uint8_t ra, rb;
@@ -273,6 +238,47 @@ bool Chip32Assembler::CompileArguments(Instr &instr)
         success = false;
         std::cout << "ERROR! Unsupported mnemonic: " << instr.code.mnemonic << std::endl;
         break;
+    }
+
+    return success;
+}
+
+bool Chip32Assembler::CompileConstantArguments(Instr &instr)
+{
+    bool success = true;
+
+    for (auto &a : instr.args)
+    {
+        // Check string
+        if (a.size() > 2)
+        {
+            // Detected string
+            if ((a[0] == '"') && (a[a.size() - 1] == '"'))
+            {
+                for (int i = 1; i < (a.size() - 1); i++)
+                {
+                    instr.compiledArgs.push_back(a[i]);
+                }
+                instr.compiledArgs.push_back(0);
+                continue;
+            }
+        }
+
+        // here, we check if the intergers are correct
+        uint32_t intVal = static_cast<uint32_t>(strtol(a.c_str(),  NULL, 0));
+
+        bool sizeOk = false;
+        if (((intVal <= UINT8_MAX) && (instr.dataBaseSize == 8)) ||
+            ((intVal <= UINT16_MAX) && (instr.dataBaseSize == 16)) ||
+            ((intVal <= UINT32_MAX) && (instr.dataBaseSize == 32))) {
+            sizeOk = true;
+        }
+        if (sizeOk) {
+            leu32_put(instr.compiledArgs, intVal);
+        } else {
+            std::cout << "Error, integer too high: " << intVal << std::endl;
+            return false;
+        }
     }
 
     return success;
@@ -322,13 +328,12 @@ void Chip32Assembler::BuildBinary(std::vector<uint8_t> &program)
             }
         }
     }
-
-    hexdump(program.data(), program.size());
 }
 
 
-void Chip32Assembler::Parse(const std::string &data)
+bool Chip32Assembler::Parse(const std::string &data)
 {
+    bool success = true;
     std::stringstream data_stream(data);
     std::string line;
 
@@ -356,7 +361,6 @@ void Chip32Assembler::Parse(const std::string &data)
 
             // Split the line
             std::vector<std::string> lineParts = Split(line);
-//            std::vector<std::string> lineParts = tokenizer(line, ' ');
 
             if (lineParts.size() > 0)
             {
@@ -365,7 +369,10 @@ void Chip32Assembler::Parse(const std::string &data)
                 Instr instr;
                 instr.line = lineNum;
 
-                if ((opcode[opcode.length() - 1] == ':') && (lineParts.size() == 1))
+                // =======================================================================================
+                // LABEL
+                // =======================================================================================
+                if ((opcode[0] == '.') && (opcode[opcode.length() - 1] == ':') && (lineParts.size() == 1))
                 {
                     // Label
                     std::cout << "Detected label line: " << lineNum << std::endl;
@@ -374,6 +381,10 @@ void Chip32Assembler::Parse(const std::string &data)
                     instr.isLabel = true;
                     m_instructions.push_back(instr);
                 }
+
+                // =======================================================================================
+                // INSTRUCTIONS
+                // =======================================================================================
                 else if (IsOpCode(opcode, instr.code))
                 {
                     std::cout << "Found potential opcode line: " << lineNum << std::endl;
@@ -389,7 +400,7 @@ void Chip32Assembler::Parse(const std::string &data)
                         // Compute arguments
                         for (int i = 1; i < lineParts.size(); i++)
                         {
-                            ParseArgs(instr, lineParts[i]);
+                            GetArgs(instr, lineParts[i]);
                         }
 
                         if (instr.args.size() == instr.code.nbAargs)
@@ -410,28 +421,81 @@ void Chip32Assembler::Parse(const std::string &data)
 
                     if (nbArgsSuccess)
                     {
-                        CompileArguments(instr);
+                        CompileMnemonicArguments(instr);
                         m_instructions.push_back(instr);
                     }
                 }
+                // =======================================================================================
+                // CONSTANTS IN ROM OR RAM
+                // =======================================================================================
                 else if (opcode[0] == '$')
                 {
                     std::cout << "Found Data line: " << lineNum << std::endl;
+
+//                    $imageBird          DC8  "example.bmp"  ; data
+//                    $someConstant       DC32  12456789
+
+                    instr.code.mnemonic = opcode;
+                    instr.isData = true;
+
+                    if (lineParts.size() >= 3)
+                    {                        
+                        std::string type = lineParts[1];
+
+                        if (type.length() < 3) {
+                            std::cout << "error: " << lineNum << ": bad data type size" << std::endl;
+                            return false;
+                        }
+                        if (type[0] == 'D')
+                        {
+                           if (type[1] == 'C')
+                           {
+                               instr.isRom = true;
+                           } else if (type[1] == 'V')
+                           {
+                               instr.isRom = false;
+                           }
+                           else
+                           {
+                               std::cout << "error: " << lineNum << ": data type not supported" << std::endl;
+                               return false;
+                           }
+                        } else {
+                            std::cout << "error: " << lineNum << ": data type not supported" << std::endl;
+                            return false;
+                        }
+
+                        type.erase(0, 2);
+                        instr.dataBaseSize = static_cast<uint32_t>(strtol(type.c_str(),  NULL, 0));
+
+                        for (int i = 2; i < lineParts.size(); i++)
+                        {
+                            GetArgs(instr, lineParts[i]);
+                        }
+                        if (CompileConstantArguments(instr)) {
+                            m_instructions.push_back(instr);
+                        }
+
+                    }
+                    else
+                    {
+                        std::cout << "error: " << lineNum << ": bad number of parameters" << std::endl;
+                        success = false;
+                    }
                 }
                 else
                 {
-                    std::cout << "Error line " << lineNum << ": label must end with ':'" << std::endl;
+                    success = false;
+                    std::cout << "error: " << lineNum << ": label must end with ':'" << std::endl;
                 }
             }
             else
             {
-                std::cout << "Not a valid line: " << lineNum << std::endl;
+                success = false;
+                std::cout << "error: " << lineNum << ": not a valid line" << std::endl;
             }
-
         }
-
     }
 
+    return success;
 }
-
-

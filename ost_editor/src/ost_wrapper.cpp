@@ -2,7 +2,7 @@
 #include <memory>
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
-#include "SDL2/SDL.h"
+#include "SDL.h"
 #include "imgui-knobs.h"
 
 #include "ost_common.h"

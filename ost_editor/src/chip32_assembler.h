@@ -19,16 +19,24 @@ struct Instr {
     std::vector<std::string> args;
     std::vector<uint8_t> compiledArgs;
     OpCode code;
+    uint16_t dataBaseSize{0};
 
-    bool isLabel{false}; //<! If true, this is a label, otherwise it is an instruction
-    bool useLabel{false}; //<! If true, the instruction uses a label
+    bool isLabel{false}; //!< If true, this is a label, otherwise it is an instruction
+    bool useLabel{false}; //!< If true, the instruction uses a label
+    bool isData{false}; //!< True is constant data in program
+    bool isRom{false}; //!< True in RAM, else in ROM
 
-    uint16_t addr{0}; //<! instruction address when assembled in program memory
+    uint16_t addr{0}; //!< instruction address when assembled in program memory
 
     void Copy(std::vector<uint8_t> &mem)
     {
         addr = mem.size();
-        mem.push_back(code.opcode);
+
+        if (!isData)
+        {
+            mem.push_back(code.opcode);
+        }
+
         for (auto a : compiledArgs)
         {
             mem.push_back(a);
@@ -46,18 +54,17 @@ struct RegNames
 class Chip32Assembler
 {
 public:
-    Chip32Assembler();
-
     void BuildBinary(std::vector<uint8_t> &program);
-    void Parse(const std::string &data);
+    bool Parse(const std::string &data);
 
 private:
-    bool CompileArguments(Instr &instr);
+    bool CompileMnemonicArguments(Instr &instr);
 
     // label, address
     std::map<std::string, uint16_t> m_labels;
 
     std::vector<Instr> m_instructions;
+    bool CompileConstantArguments(Instr &instr);
 };
 
 #endif // CHIP32_ASSEMBLER_H
