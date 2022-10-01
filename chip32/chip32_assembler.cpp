@@ -151,10 +151,23 @@ bool Chip32Assembler::CompileMnemonicArguments(Instr &instr)
         break;
     case OP_POP:
     case OP_PUSH:
+    case OP_SKIPZ:
+    case OP_SKIPNZ:
         GET_REG(instr.args[0], ra);
         instr.compiledArgs.push_back(ra);
         break;
     case OP_MOV:
+    case OP_ADD:
+    case OP_SUB:
+    case OP_MUL:
+    case OP_DIV:
+    case OP_SHL:
+    case OP_SHR:
+    case OP_ISHR:
+    case OP_AND:
+    case OP_OR:
+    case OP_XOR:
+    case OP_NOT:
         GET_REG(instr.args[0], ra);
         GET_REG(instr.args[1], rb);
         instr.compiledArgs.push_back(ra);
@@ -162,6 +175,7 @@ bool Chip32Assembler::CompileMnemonicArguments(Instr &instr)
         break;
     case OP_JMP:
     case OP_CALL:
+    case OP_JR:
         // Reserve 2 bytes for address, it will be filled at the end
         instr.useLabel = true;
         instr.compiledArgs.push_back(0);

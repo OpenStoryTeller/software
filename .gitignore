@@ -23,3 +23,7 @@ build-ost_editor-Desktop_Qt_5_15_2_GCC_64bit-Debug/
 build-ost_editor-Desktop_Qt_6_2_3_GCC_64bit-Debug/
 
 build-ost_editor-Desktop-Debug/
+
+test/build-chip_assembler_test-Desktop_Qt_6_2_3_GCC_64bit-Debug/
+
+test/build-chip32_test-Desktop_Qt_6_3_1_GCC_64bit-Debug/
