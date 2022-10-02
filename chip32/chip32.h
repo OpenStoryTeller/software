@@ -48,14 +48,14 @@ typedef enum
     OP_RET,  // return to the address of last callee (RA), e.g.: ret
 
     // memory:
-    OP_STORE,   // copy a value from a register to a heap address, e.g.: stor 0x08 0x00, r0
+    OP_STORE,   // copy a value from a register to a heap address, e.g.: store 0x08 0x00, r0
     OP_LOAD,   // copy a value from a heap address to a register, e.g.: load r0, 0x08 0x00
 
     // arithmetic:
     OP_ADD,  // sum and store in first reg, e.g.: add r0, r2
     OP_SUB,  // subtract and store in first reg, e.g.: sub r0, r2
     OP_MUL,  // multiply and store in first reg, e.g.: mul r0, r2
-    OP_DIV,  // divide and store in first reg, e.g.: div r0, r2
+    OP_DIV,  // divide and store in first reg, remain in second, e.g.: div r0, r2
 
     OP_SHL,  // logical shift left, e.g.: shl r0, r1
     OP_SHR,  // logical shift right, e.g.: shr r0, r1
@@ -133,6 +133,19 @@ typedef enum
     VM_ERR_INVALID_ADDRESS,     // tried to access an invalid memory address
 } chip32_result_t;
 
+typedef struct {
+    uint8_t opcode;
+    uint8_t nbAargs; //!< Number of arguments needed in assembly
+    uint8_t bytes; //!< Size of bytes arguments
+} OpCode;
+
+#define OPCODES_LIST { { OP_NOP, 0, 0 }, { OP_HALT, 0, 0 }, { OP_SYSCALL, 1, 1 }, { OP_LCONS, 2, 5 }, \
+{ OP_MOV, 2, 2 }, { OP_PUSH, 1, 1 }, {OP_POP, 1, 1 }, { OP_CALL, 1, 2 }, { OP_RET, 0, 0 }, \
+{ OP_STORE, 2, 3 }, { OP_LOAD, 2, 3 }, { OP_ADD, 2, 2 }, { OP_SUB, 2, 2 }, { OP_MUL, 2, 2 }, \
+{ OP_DIV, 2, 2 }, { OP_SHL, 2, 2 }, { OP_SHR, 2, 2 }, { OP_ISHR, 2, 2 }, { OP_AND, 2, 2 }, \
+{ OP_OR, 2, 2 }, { OP_XOR, 2, 2 }, { OP_NOT, 1 }, { OP_JMP, 1 }, { OP_JR, 1 }, \
+{ OP_SKIPZ, 1 }, { OP_SKIPNZ, 1 } }
+
 /**
   Whole memory is 64KB
 
@@ -162,7 +175,16 @@ typedef struct
 
 } virtual_mem_t;
 
+// =======================================================================================
+// VM RUN
+// =======================================================================================
 void chip32_initialize(virtual_mem_t *rom, virtual_mem_t *ram, uint16_t stack_size);
 chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr);
+
+// =======================================================================================
+// VM ACCESS
+// =======================================================================================
+uint32_t chip32_get_register(chip32_register_t reg);
+void chip32_set_register(chip32_register_t reg, uint32_t val);
 
 #endif // CHIP32_H

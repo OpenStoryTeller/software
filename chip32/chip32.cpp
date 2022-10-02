@@ -28,6 +28,10 @@ THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+// =======================================================================================
+// MACROS
+// =======================================================================================
+
 #define _NEXT_BYTE g_rom->mem[++g_registers[IP]]
 #define _NEXT_SHORT ({ g_registers[IP] += 2; g_rom->mem[g_registers[IP]-1]\
                      | g_rom->mem[g_registers[IP]] << 8; })
@@ -37,12 +41,14 @@ THE SOFTWARE.
         g_rom->mem[g_registers[IP] - 1] << 16 | g_rom->mem[g_registers[IP]] << 24; \
 })
 
+#define _CHECK_SKIP if (skip) continue;
+
 #ifndef VM_DISABLE_CHECKS
-#define _CHECK_ADDR_VALID(a) \
-    if ((a < g_rom->addr) || (a >= (g_rom->addr + g_rom->size))) \
+#define _CHECK_ROM_ADDR_VALID(a) \
+    if (a >= g_rom->size) \
         return VM_ERR_INVALID_ADDRESS;
 #define _CHECK_BYTES_AVAIL(n) \
-    _CHECK_ADDR_VALID(g_registers[IP] + n)
+    _CHECK_ROM_ADDR_VALID(g_registers[IP] + n)
 #define _CHECK_REGISTER_VALID(r) \
     if (r >= REGISTER_COUNT)     \
         return VM_ERR_INVALID_REGISTER;
@@ -50,12 +56,12 @@ THE SOFTWARE.
     if (g_registers[SP] - (n * sizeof(uint32_t)) > g_ram->addr) \
         return VM_ERR_STACK_OVERFLOW;
 #define _CHECK_CAN_POP(n)                                               \
-    if (g_registers[SP] + (n * sizeof(uint32_t)) > (g_ram->addr + g_ram->size) \
+    if (g_registers[SP] + (n * sizeof(uint32_t)) > (g_ram->addr + g_ram->size)) \
         return VM_ERR_STACK_UNDERFLOW;                      \
     if (g_registers[SP] < prog_size)                          \
         return VM_ERR_STACK_OVERFLOW;
 #else
-#define _CHECK_ADDR_VALID(a)
+#define _CHECK_ROM_ADDR_VALID(a)
 #define _CHECK_BYTES_AVAIL(n)
 #define _CHECK_REGISTER_VALID(r)
 #define _CHECK_CAN_PUSH(n)
@@ -69,7 +75,12 @@ static uint16_t g_stack_size;
 
 bool (*g_interrupt_callback)(uint8_t) = nullptr;
 
+static const OpCode OpCodes[] = OPCODES_LIST;
+static const uint16_t OpCodesSize = sizeof(OpCodes) / sizeof(OpCodes[0]);
 
+// =======================================================================================
+// FUNCTIONS
+// =======================================================================================
 void chip32_initialize(virtual_mem_t *rom, virtual_mem_t *ram, uint16_t stack_size)
 {
     g_ram = ram;
@@ -135,13 +146,25 @@ void chip32_set_register(chip32_register_t reg, uint32_t val)
 chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
 {
     uint32_t instrCount = 0;
+    bool skip = false;
 
     while ((max_instr == 0) || (instrCount < max_instr))
     {
-        _CHECK_ADDR_VALID(g_registers[IP])
+        _CHECK_ROM_ADDR_VALID(g_registers[IP])
         const uint8_t instr = g_rom->mem[g_registers[IP]];
         if (instr >= INSTRUCTION_COUNT)
             return VM_ERR_UNKNOWN_OPCODE;
+
+        uint8_t bytes = OpCodes[instr].bytes;
+        _CHECK_BYTES_AVAIL(bytes);
+
+        if (skip)
+        {
+            skip = false;
+            g_registers[IP] += bytes + 1; // jump over arguments and point to the next instruction
+            instrCount++;
+            continue;
+        }
 
         switch (instr)
         {
@@ -155,7 +178,6 @@ chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
         }
         case OP_SYSCALL:
         {
-            _CHECK_BYTES_AVAIL(1)
             const uint8_t code = _NEXT_BYTE;
 
             if (g_interrupt_callback == nullptr)
@@ -164,9 +186,15 @@ chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
                 return VM_FINISHED;
             break;
         }
+        case OP_LCONS:
+        {
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            g_registers[reg] = _NEXT_INT;
+            break;
+        }
         case OP_MOV:
         {
-            _CHECK_BYTES_AVAIL(2)
             const uint8_t reg1 = _NEXT_BYTE;
             const uint8_t reg2 = _NEXT_BYTE;
             _CHECK_REGISTER_VALID(reg1)
@@ -174,18 +202,181 @@ chip32_result_t chip32_run(uint16_t prog_size, uint32_t max_instr)
             g_registers[reg1] = g_registers[reg2];
             break;
         }
-        case OP_LCONS:
+        case OP_PUSH:
         {
-            _CHECK_BYTES_AVAIL(5)
             const uint8_t reg = _NEXT_BYTE;
             _CHECK_REGISTER_VALID(reg)
-            g_registers[reg] = _NEXT_INT;
+            _CHECK_CAN_PUSH(1)
+            g_registers[SP] -= 4;
+            memcpy(&g_ram->mem[g_registers[SP]], &g_registers[reg], sizeof(uint32_t));
+            break;
+        }
+        case OP_POP:
+        {
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            _CHECK_CAN_POP(1)
+            memcpy(&g_registers[reg], &g_ram->mem[g_registers[SP]], sizeof(uint32_t));
+            g_registers[SP] += 4;
+            break;
+        }
+        case OP_CALL:
+        {
+            g_registers[RA] = g_registers[IP] + 3;
+            g_registers[IP] = _NEXT_SHORT - 1;
+            break;
+        }
+        case OP_RET:
+        {
+            g_registers[IP] = g_registers[RA] - 1;
+            break;
+        }
+        case OP_STORE:
+        {
+            const uint16_t addr = _NEXT_SHORT;
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            _CHECK_ROM_ADDR_VALID((uint32_t)addr + 3)
+            memcpy(&g_ram->mem[addr], &g_registers[reg], sizeof(uint32_t));
+            break;
+        }
+        case OP_LOAD:
+        {
+            const uint8_t reg = _NEXT_BYTE;
+            const uint16_t addr = _NEXT_SHORT;
+            _CHECK_REGISTER_VALID(reg)
+            _CHECK_ROM_ADDR_VALID((uint32_t)addr + 3)
+            memcpy(&g_registers[reg], &g_ram->mem[addr], sizeof(uint32_t));
+            break;
+        }
+        case OP_ADD:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] + g_registers[reg2];
+            break;
+        }
+        case OP_SUB:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] - g_registers[reg2];
+            break;
+        }
+        case OP_MUL:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] * g_registers[reg2];
+            break;
+        }
+        case OP_DIV:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] / g_registers[reg2];
+            break;
+        }
+        case OP_SHL:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] << g_registers[reg2];
+            break;
+        }
+        case OP_SHR:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] >> g_registers[reg2];
+            break;
+        }
+        case OP_ISHR:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            *((int32_t *)&g_registers[reg1]) = *((int32_t *)&g_registers[reg1]) >> *((int32_t *)&g_registers[reg2]);
+            break;
+        }
+        case OP_AND:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] & g_registers[reg2];
+            break;
+        }
+        case OP_OR:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] | g_registers[reg2];
+            break;
+        }
+        case OP_XOR:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            const uint8_t reg2 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            _CHECK_REGISTER_VALID(reg2)
+            g_registers[reg1] = g_registers[reg1] ^ g_registers[reg2];
+            break;
+        }
+        case OP_NOT:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            g_registers[reg1] = ~g_registers[reg1];
             break;
         }
         case OP_JMP:
         {
-            _CHECK_BYTES_AVAIL(2)
             g_registers[IP] = _NEXT_SHORT - 1;
+            break;
+        }
+        case OP_JR:
+        {
+            const uint8_t reg1 = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg1)
+            uint16_t addr = g_registers[reg1];
+            g_registers[IP] = addr;
+            break;
+        }
+        case OP_SKIPZ:
+        {
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            if (reg == 0)
+            {
+                skip = true;
+            }
+            break;
+        }
+        case OP_SKIPNZ:
+        {
+            const uint8_t reg = _NEXT_BYTE;
+            _CHECK_REGISTER_VALID(reg)
+            if (reg != 0)
+            {
+                skip = true;
+            }
             break;
         }
         }

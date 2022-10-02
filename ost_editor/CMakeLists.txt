@@ -47,10 +47,10 @@ set(PROJECT_SOURCES
     ${OST_ROOT}/src/debug.h
 
     # ----------------  VIRTUAL MACHINE FILES  ----------------
-    ${OST_EDITOR_ROOT}/src/chip32_assembler.h
-    ${OST_EDITOR_ROOT}/src/chip32_assembler.cpp
-    ${OST_ROOT}/common/chip32.h
-    ${OST_ROOT}/common/chip32.cpp
+    ${OST_ROOT}/chip32/chip32_assembler.h
+    ${OST_ROOT}/chip32/chip32_assembler.cpp
+    ${OST_ROOT}/chip32/chip32.h
+    ${OST_ROOT}/chip32/chip32.cpp
 
     # ----------------  IMGUI  ----------------
     ${IMGUI_DIR}/imgui.cpp
@@ -80,6 +80,7 @@ set(OST_EDITOR_INCLUDES
     ${OST_ROOT}/src
     ${OST_ROOT}/hal
     ${OST_ROOT}/common
+    ${OST_ROOT}/chip32
 )
 
 #=========================================================================================================================

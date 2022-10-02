@@ -1,3 +1,28 @@
+/*
+The MIT License
+
+Copyright (c) 2022 Anthony Rabine
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+
 #include "chip32_assembler.h"
 
 #include <sstream>
@@ -68,13 +93,13 @@ static bool GetRegister(const std::string &regName, uint8_t &reg)
     return false;
 }
 
-static OpCode OpCodes[] = { { "nop", OP_NOP, 0 }, { "halt", OP_HALT, 0 }, { "syscall", OP_SYSCALL, 1 }, { "lcons", OP_LCONS, 2 },
-    { "mov", OP_MOV, 2 }, { "push", OP_PUSH, 1 }, { "pop", OP_POP, 1 }, { "call", OP_CALL, 1 }, { "ret", OP_RET, 0 },
-    { "store", OP_STORE, 2 }, { "load", OP_LOAD, 2 }, { "add", OP_ADD, 2 }, { "sub", OP_SUB, 2 }, { "mul", OP_MUL, 2 },
-    { "div", OP_DIV, 2 }, { "shiftl", OP_SHL, 2 }, { "shiftr", OP_SHR, 2 }, { "ishiftr", OP_ISHR, 2 }, { "and", OP_AND, 2 },
-    { "or", OP_OR, 2 }, { "xor", OP_XOR, 2 }, { "not", OP_NOT, 1 }, { "jump", OP_JMP, 1 }, { "jumpr", OP_JR, 1 },
-    { "skipz", OP_SKIPZ, 1 }, { "skipnz", OP_SKIPNZ, 1 }
+// Keep same order than the opcodes list!!
+static const std::string Mnemonics[] = {
+    "nop", "halt", "syscall", "lcons", "mov", "push", "pop", "call", "ret", "store", "load", "add", "sub", "mul", "div",
+    "shiftl", "shiftr", "ishiftr", "and", "or", "xor", "not", "jump", "jumpr", "skipz", "skipnz"
 };
+
+static OpCode OpCodes[] = OPCODES_LIST;
 
 static const uint32_t nbOpCodes = sizeof(OpCodes) / sizeof(OpCodes[0]);
 
@@ -85,7 +110,7 @@ static bool IsOpCode(const std::string &label, OpCode &op)
 
     for (uint32_t i = 0; i < nbOpCodes; i++)
     {
-        if (OpCodes[i].mnemonic == lowLabel)
+        if (Mnemonics[i] == lowLabel)
         {
             success = true;
             op = OpCodes[i];
@@ -192,7 +217,7 @@ bool Chip32Assembler::CompileMnemonicArguments(Instr &instr)
         leu16_put(instr.compiledArgs, static_cast<uint16_t>(strtol(instr.args[1].c_str(),  NULL, 0)));
         break;
     default:
-        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " << instr.code.mnemonic);
+        CHIP32_CHECK(instr, false, "Unsupported mnemonic: " << instr.mnemonic);
         break;
     }
     return true;
@@ -250,7 +275,7 @@ bool Chip32Assembler::BuildBinary(std::vector<uint8_t> &program, AssemblyResult 
 
         if (i.isLabel || i.isRamData)
         {
-             m_labels[i.code.mnemonic] = program.size();
+             m_labels[i.mnemonic] = program.size();
              if (i.isRamData) result.ramUsageSize += i.dataLen * i.dataTypeSize/8;
         }
         else
@@ -267,18 +292,12 @@ bool Chip32Assembler::BuildBinary(std::vector<uint8_t> &program, AssemblyResult 
         {
             // label is always the first argument
             std::string label = i.args[0];
-            if (m_labels.count(label))
-            {
-                uint16_t addr = m_labels[label];
-                uint16_t argsIndex = i.addr + 1;
+            CHIP32_CHECK(i, m_labels.count(label) > 0, "label not found: " << label);
+            uint16_t addr = m_labels[label];
+            uint16_t argsIndex = i.addr + 1;
 
-                program[argsIndex] = addr & 0xFF;
-                program[argsIndex+1] = (addr >> 8U) & 0xFF;
-            }
-            else
-            {
-                std::cout << "Error, label not found: " << label << std::endl;
-            }
+            program[argsIndex] = addr & 0xFF;
+            program[argsIndex+1] = (addr >> 8U) & 0xFF;
         }
     }
     result.romUsageSize = program.size();
@@ -304,7 +323,6 @@ bool Chip32Assembler::Parse(const std::string &data)
         int pos = line.find_first_of(";");
         if (pos != std::string::npos) {
             line.erase(pos);
-            std::cout << "Removed comment at line: " << lineNum << std::endl;
         }
 
         if (line.length() <= 0) continue;
@@ -324,9 +342,8 @@ bool Chip32Assembler::Parse(const std::string &data)
         {
             CHIP32_CHECK(instr, (opcode[opcode.length() - 1] == ':') && (lineParts.size() == 1), "label must end with ':'");
             // Label
-            std::cout << "Detected label line: " << lineNum << std::endl;
             opcode.pop_back(); // remove the colon character
-            instr.code.mnemonic = opcode;
+            instr.mnemonic = opcode;
             instr.isLabel = true;
             CHIP32_CHECK(instr, m_labels.count(opcode) == 0, "duplicated label : " << opcode);
             m_labels[opcode] = 0; // will be filled during the build binary phase
@@ -338,8 +355,7 @@ bool Chip32Assembler::Parse(const std::string &data)
         // =======================================================================================
         else if (IsOpCode(opcode, instr.code))
         {
-            std::cout << "Found potential opcode line: " << lineNum << std::endl;
-
+            instr.mnemonic = opcode;
             bool nbArgsSuccess = false;
             // Test nedded arguments
             if ((instr.code.nbAargs == 0) && (lineParts.size() == 1))
@@ -365,7 +381,7 @@ bool Chip32Assembler::Parse(const std::string &data)
 
             if (nbArgsSuccess)
             {
-                CompileMnemonicArguments(instr);
+                CHIP32_CHECK(instr, CompileMnemonicArguments(instr) == true, "Compile failure");
                 m_instructions.push_back(instr);
             }
         }
@@ -374,9 +390,7 @@ bool Chip32Assembler::Parse(const std::string &data)
         // =======================================================================================
         else if (opcode[0] == '$')
         {
-            std::cout << "Found Data line: " << lineNum << std::endl;
-
-            instr.code.mnemonic = opcode;
+            instr.mnemonic = opcode;
             CHIP32_CHECK(instr, (lineParts.size() >= 3), "bad number of parameters");
 
             std::string type = lineParts[1];
