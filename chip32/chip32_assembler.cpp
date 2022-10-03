@@ -271,6 +271,7 @@ bool Chip32Assembler::BuildBinary(std::vector<uint8_t> &program, AssemblyResult 
     // 1. First pass: serialize each instruction and arguments to program memory, assign address to variables (rom or ram)
     for (auto &i : m_instructions)
     {
+        i.addr = program.size();
         if (! (i.isRamData || i.isRomData)) program.push_back(i.code.opcode);
 
         if (i.isLabel || i.isRamData)
