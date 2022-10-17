@@ -15,8 +15,8 @@ find_package(OpenGL REQUIRED)
 
 set(OST_EDITOR_ROOT  ${CMAKE_CURRENT_SOURCE_DIR})
 set(OST_ROOT  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-set(IMGUI_DIR ${OST_EDITOR_ROOT}/imgui)
-set(IMGUI_NODE_EDITOR_DIR ${OST_EDITOR_ROOT}/imnodes)
+set(IMGUI_DIR ${OST_EDITOR_ROOT}/imgui-docking-layout)
+set(IMGUI_NODE_EDITOR_DIR ${OST_EDITOR_ROOT}/imgui-node-editor)
 set(IMGUI_KNOBS_DIR ${OST_EDITOR_ROOT}/imgui-knobs)
 set(IMGUI_TEXT_EDIT_DIR ${OST_EDITOR_ROOT}/ImGuiColorTextEdit)
 
@@ -27,14 +27,22 @@ set(PROJECT_SOURCES
 
     # ----------------  EDITOR FILES  ----------------
     ${OST_EDITOR_ROOT}/src/main.cpp
-    ${OST_EDITOR_ROOT}/src/sdl_wrapper.cpp
+    ${OST_EDITOR_ROOT}/src/application.cpp
+    ${OST_EDITOR_ROOT}/src/application.h
     ${OST_EDITOR_ROOT}/src/imgui_memory_editor.h
-    ${OST_EDITOR_ROOT}/src/sdl_wrapper.h
     ${OST_EDITOR_ROOT}/src/IconsFontAwesome5.h
     ${OST_EDITOR_ROOT}/src/code_editor.cpp
     ${OST_EDITOR_ROOT}/src/code_editor.h
     ${OST_EDITOR_ROOT}/src/console_window.cpp
     ${OST_EDITOR_ROOT}/src/console_window.h
+    ${OST_EDITOR_ROOT}/src/blueprint/blueprint.cpp
+    ${OST_EDITOR_ROOT}/src/blueprint/builders.cpp
+    ${OST_EDITOR_ROOT}/src/blueprint/drawing.cpp
+    ${OST_EDITOR_ROOT}/src/blueprint/widgets.cpp
+    ${OST_EDITOR_ROOT}/src/blueprint/node_base.h
+    ${OST_EDITOR_ROOT}/src/blueprint/node_base.cpp
+    ${OST_EDITOR_ROOT}/src/blueprint/node_image.h
+    ${OST_EDITOR_ROOT}/src/blueprint/node_image.cpp
 
     # ----------------  OST IMPLEMENTATION USING SDL  ----------------
     ${OST_EDITOR_ROOT}/src/ost_wrapper.cpp
@@ -61,8 +69,13 @@ set(PROJECT_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_sdlrenderer.cpp
 
     # ----------------  IMGUI ADD ONS ----------------
-    ${IMGUI_NODE_EDITOR_DIR}/imnodes.cpp
-    ${IMGUI_NODE_EDITOR_DIR}/imnodes.h
+#    ${IMGUI_NODE_EDITOR_DIR}/imnodes.cpp
+#    ${IMGUI_NODE_EDITOR_DIR}/imnodes.h
+
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_canvas.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/imgui_node_editor_api.cpp
+    ${IMGUI_NODE_EDITOR_DIR}/crude_json.cpp
     ${IMGUI_KNOBS_DIR}/imgui-knobs.cpp
     ${IMGUI_KNOBS_DIR}/imgui-knobs.h
     ${IMGUI_TEXT_EDIT_DIR}/TextEditor.cpp
@@ -76,6 +89,7 @@ set(OST_EDITOR_INCLUDES
     ${IMGUI_NODE_EDITOR_DIR}
     ${IMGUI_TEXT_EDIT_DIR}
     ${OST_EDITOR_ROOT}/src
+    ${OST_EDITOR_ROOT}/src/blueprint
     ${IMGUI_KNOBS_DIR}
     ${OST_ROOT}/src
     ${OST_ROOT}/hal

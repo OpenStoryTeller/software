@@ -1,21 +1,19 @@
 
 #include <iostream>
 #include <memory>
-#include "sdl_wrapper.h"
+#include "application.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_memory_editor.h"
-#include "imnodes.h"
 #include "IconsFontAwesome5.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "blueprint.h"
+
 
 #include "ost_wrapper.h"
 
 #include "code_editor.h"
 #include "console_window.h"
-#include "chip32_assembler.h"
 
 #define NODE_TYPE_IMAGE     1
 #define NODE_TYPE_SOUND     2
@@ -31,7 +29,7 @@ void draw_memory_editor()
    mem_edit_1.DrawWindow("Memory Editor", data, data_size);
 
 }
-
+/*
 class INode
 {
 public:
@@ -216,7 +214,7 @@ void draw_node_editor()
 
     ImGui::End();
 }
-
+*/
 
 void draw_tool_bar()
 {
@@ -351,15 +349,28 @@ void draw_editor_layout()
 
 }
 
-class App : public SdlWrapper
+
+class App : public Application
 {
 public:
+
+    App()
+        : m_blueprint(*this)
+    {
+
+    }
+
+    void OnStart() override
+    {
+        m_blueprint.OnStart();
+    }
 
     int Update(SDL_Renderer *renderer, double deltaTime) override
     {
         draw_editor_layout();
         draw_memory_editor();
-        draw_node_editor();
+//        draw_node_editor();
+        m_blueprint.OnFrame();
         draw_ost_device(renderer, deltaTime);
         code_editor_draw();
 
@@ -369,6 +380,7 @@ public:
     }
 
 private:
+    Blueprint m_blueprint;
     ConsoleWindow m_console;
 };
 
@@ -379,18 +391,16 @@ int main()
 
     app.Initialize();
 
-    ImNodes::CreateContext();
-
     code_editor_initialize();
 
+
+    app.OnStart();
     int ev = 0;
     do
     {
        ev = app.Process();
     }
     while (ev != SDL_EV_QUIT);
-
-    ImNodes::DestroyContext();
 
     app.Close();
 

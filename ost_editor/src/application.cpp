@@ -1,5 +1,5 @@
 
-#include "sdl_wrapper.h"
+#include "application.h"
 #include <SDL.h>
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -9,13 +9,62 @@
 #include <functional>
 
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
-void SdlWrapper::GetWindowSize(int *w, int *h)
+void Application::GetWindowSize(int *w, int *h)
 {
     SDL_GetWindowSize(mWindow, w, h);
 }
 
-int SdlWrapper::Initialize()
+SDL_Texture *Application::LoadTexture(const char* path)
+{
+    // Read data
+    int32_t width, height, bytesPerPixel;
+    void* data = stbi_load(path, &width, &height, &bytesPerPixel, 0);
+
+    // Calculate pitch
+    int pitch;
+    pitch = width * bytesPerPixel;
+    pitch = (pitch + 3) & ~3;
+
+    // Setup relevance bitmask
+    int32_t Rmask, Gmask, Bmask, Amask;
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+    Rmask = 0x000000FF;
+    Gmask = 0x0000FF00;
+    Bmask = 0x00FF0000;
+    Amask = (bytesPerPixel == 4) ? 0xFF000000 : 0;
+#else
+    int s = (bytesPerPixel == 4) ? 0 : 8;
+    Rmask = 0xFF000000 >> s;
+    Gmask = 0x00FF0000 >> s;
+    Bmask = 0x0000FF00 >> s;
+    Amask = 0x000000FF >> s;
+#endif
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(data, width, height, bytesPerPixel*8, pitch, Rmask, Gmask, Bmask, Amask);
+    SDL_Texture* t = nullptr;
+    if (surface)
+    {
+        t = SDL_CreateTextureFromSurface(mRenderer, surface);
+    }
+    else
+    {
+        t = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 20, 20);
+    }
+
+    STBI_FREE(data);
+    SDL_FreeSurface(surface);
+    return t;
+}
+
+void Application::DestroyTexture(SDL_Texture *texture)
+{
+    SDL_DestroyTexture(texture);
+}
+
+
+int Application::Initialize()
 {
     // initiate SDL
      if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS |
@@ -136,13 +185,13 @@ int SdlWrapper::Initialize()
      mRenderer =  SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED);
 
      // setup platform/renderer bindings
-     ImGui_ImplSDL2_InitForSDLRenderer(mWindow);
+     ImGui_ImplSDL2_InitForSDLRenderer(mWindow, mRenderer);
      ImGui_ImplSDLRenderer_Init(mRenderer);
 
      return mRenderer != nullptr;
 }
 
-int SdlWrapper::Process()
+int Application::Process()
 {
     // Stores the number of ticks at the start of the loop
     frameStart = SDL_GetTicks();
@@ -213,7 +262,7 @@ int SdlWrapper::Process()
     return 0;
 }
 
-void SdlWrapper::Close()
+void Application::Close()
 {
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -222,4 +271,22 @@ void SdlWrapper::Close()
     SDL_DestroyRenderer(mRenderer);
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
+}
+
+int Application::GetTextureWidth(SDL_Texture *t)
+{
+    int w = 0;
+    int h = 0;
+    // get the width and height of the texture
+    SDL_QueryTexture(t, NULL, NULL, &w, &h);
+    return w;
+}
+
+int Application::GetTextureHeight(SDL_Texture *t)
+{
+    int w = 0;
+    int h = 0;
+    // get the width and height of the texture
+    SDL_QueryTexture(t, NULL, NULL, &w, &h);
+    return h;
 }

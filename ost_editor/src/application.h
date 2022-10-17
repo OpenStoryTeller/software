@@ -7,7 +7,7 @@
 
 #define SDL_EV_QUIT     10000
 
-class SdlWrapper
+class Application
 {
 public:
 
@@ -18,6 +18,13 @@ public:
     int Process();
     void Close();
 
+    int GetTextureWidth(SDL_Texture *t);
+    int GetTextureHeight(SDL_Texture *t);
+
+    virtual void OnStart() = 0;
+
+    SDL_Texture *LoadTexture(const char *path);
+    void DestroyTexture(SDL_Texture *texture);
 private:
 
     const int FPS = 60;
